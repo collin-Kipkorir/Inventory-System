@@ -4,12 +4,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { getPayments } from "@/lib/storage";
 import { Payment } from "@/types";
+import { CreatePaymentDialog } from "@/components/CreatePaymentDialog";
 
 export default function Payments() {
   const [payments, setPayments] = useState<Payment[]>([]);
 
-  useEffect(() => {
+  const loadPayments = () => {
     setPayments(getPayments());
+  };
+
+  useEffect(() => {
+    loadPayments();
   }, []);
 
   const getModeColor = (mode: string) => {
@@ -27,9 +32,12 @@ export default function Payments() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-foreground">Payments</h2>
-        <p className="text-muted-foreground">Track all payment transactions</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-bold text-foreground">Payments</h2>
+          <p className="text-muted-foreground">Track all payment transactions</p>
+        </div>
+        <CreatePaymentDialog onPaymentCreated={loadPayments} />
       </div>
 
       <Card>
@@ -43,7 +51,7 @@ export default function Payments() {
                 <TableRow>
                   <TableHead>Payment No</TableHead>
                   <TableHead>Company</TableHead>
-                  <TableHead>Invoice No</TableHead>
+                  <TableHead>Reference</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Amount Paid</TableHead>
                   <TableHead>Mode</TableHead>
@@ -55,7 +63,9 @@ export default function Payments() {
                   <TableRow key={payment.id}>
                     <TableCell className="font-medium">{payment.paymentNo}</TableCell>
                     <TableCell>{payment.companyName}</TableCell>
-                    <TableCell>{payment.invoiceNo || "N/A"}</TableCell>
+                    <TableCell>
+                      {payment.invoiceNo || payment.lpoNumber || "N/A"}
+                    </TableCell>
                     <TableCell>{new Date(payment.date).toLocaleDateString()}</TableCell>
                     <TableCell>KES {payment.amountPaid.toLocaleString()}</TableCell>
                     <TableCell>

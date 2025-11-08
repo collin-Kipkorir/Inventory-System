@@ -47,6 +47,8 @@ export interface Payment {
   companyName: string;
   invoiceId?: string;
   invoiceNo?: string;
+  lpoId?: string;
+  lpoNumber?: string;
   date: string;
   amountPaid: number;
   mode: "cash" | "mpesa" | "bank";
@@ -61,8 +63,11 @@ export interface LPO {
   companyName: string;
   items: InvoiceItem[];
   totalAmount: number;
+  amountPaid: number;
+  balance: number;
   date: string;
   status: "pending" | "delivered";
+  paymentStatus: "paid" | "partial" | "unpaid";
   createdAt: string;
 }
 

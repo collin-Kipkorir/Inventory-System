@@ -30,6 +30,8 @@ export interface Invoice {
   invoiceNo: string;
   companyId: string;
   companyName: string;
+  lpoId?: string;
+  lpoNumber?: string;
   date: string;
   items: InvoiceItem[];
   subtotal: number;

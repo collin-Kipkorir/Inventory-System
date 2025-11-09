@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Download } from "lucide-react";
 import { getInvoices } from "@/lib/storage";
 import { Invoice } from "@/types";
@@ -32,6 +33,7 @@ export default function Invoices() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Invoice No</TableHead>
+                  <TableHead>LPO Reference</TableHead>
                   <TableHead>Company</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Total Amount</TableHead>
@@ -45,6 +47,15 @@ export default function Invoices() {
                 {invoices.map((invoice) => (
                   <TableRow key={invoice.id}>
                     <TableCell className="font-medium">{invoice.invoiceNo}</TableCell>
+                    <TableCell>
+                      {invoice.lpoNumber ? (
+                        <Badge variant="outline" className="text-xs">
+                          {invoice.lpoNumber}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">-</span>
+                      )}
+                    </TableCell>
                     <TableCell>{invoice.companyName}</TableCell>
                     <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
                     <TableCell>KES {invoice.totalAmount.toLocaleString()}</TableCell>

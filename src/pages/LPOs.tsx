@@ -53,6 +53,8 @@ export default function LPOs() {
       invoiceNo: generateInvoiceNumber(),
       companyId: lpo.companyId,
       companyName: lpo.companyName,
+      lpoId: lpo.id,
+      lpoNumber: lpo.lpoNumber,
       date: new Date().toISOString().split("T")[0],
       items: lpo.items,
       subtotal: lpo.totalAmount,

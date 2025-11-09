@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { getInvoices } from "@/lib/storage";
 import { Invoice } from "@/types";
 import { StatusBadge } from "@/components/StatusBadge";
+import { generateInvoicePDF } from "@/lib/pdf";
 
 export default function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -35,6 +38,7 @@ export default function Invoices() {
                   <TableHead>Amount Paid</TableHead>
                   <TableHead>Balance</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -48,6 +52,16 @@ export default function Invoices() {
                     <TableCell>KES {invoice.balance.toLocaleString()}</TableCell>
                     <TableCell>
                       <StatusBadge status={invoice.status} />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => generateInvoicePDF(invoice)}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        PDF
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

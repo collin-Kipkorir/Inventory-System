@@ -7,8 +7,9 @@ import { getLPOs, saveLPOs, getDeliveries, saveDeliveries, generateDeliveryNumbe
 import { LPO, Delivery } from "@/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CreateLPODialog } from "@/components/CreateLPODialog";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { generateLPOPDF } from "@/lib/pdf";
 
 export default function LPOs() {
   const [lpos, setLpos] = useState<LPO[]>([]);
@@ -107,16 +108,26 @@ export default function LPOs() {
                       <StatusBadge status={lpo.status} />
                     </TableCell>
                     <TableCell>
-                      {lpo.status === "pending" && (
+                      <div className="flex items-center gap-2">
+                        {lpo.status === "pending" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleMarkDelivered(lpo)}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Mark Delivered
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleMarkDelivered(lpo)}
+                          onClick={() => generateLPOPDF(lpo)}
                         >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Mark Delivered
+                          <Download className="h-4 w-4 mr-2" />
+                          PDF
                         </Button>
-                      )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

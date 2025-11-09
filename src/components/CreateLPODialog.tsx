@@ -20,7 +20,7 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
   const [selectedCompany, setSelectedCompany] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [items, setItems] = useState<InvoiceItem[]>([
-    { productId: "", productName: "", quantity: 1, unitPrice: 0, total: 0 },
+    { productId: "", productName: "", quantity: 1, unit: "", unitPrice: 0, total: 0 },
   ]);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
   }, [open]);
 
   const addItem = () => {
-    setItems([...items, { productId: "", productName: "", quantity: 1, unitPrice: 0, total: 0 }]);
+    setItems([...items, { productId: "", productName: "", quantity: 1, unit: "", unitPrice: 0, total: 0 }]);
   };
 
   const removeItem = (index: number) => {
@@ -46,6 +46,7 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
       const product = products.find((p) => p.id === value);
       if (product) {
         newItems[index].productName = product.name;
+        newItems[index].unit = product.unit;
         newItems[index].unitPrice = product.unitPrice;
         newItems[index].total = newItems[index].quantity * product.unitPrice;
       }
@@ -102,7 +103,7 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
   const resetForm = () => {
     setSelectedCompany("");
     setDate(new Date().toISOString().split("T")[0]);
-    setItems([{ productId: "", productName: "", quantity: 1, unitPrice: 0, total: 0 }]);
+    setItems([{ productId: "", productName: "", quantity: 1, unit: "", unitPrice: 0, total: 0 }]);
   };
 
   return (

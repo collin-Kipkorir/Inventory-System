@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { getCompanies, getInvoices, getPayments } from "@/lib/storage";
 import { Company, Invoice, Payment } from "@/types";
 import { StatusBadge } from "@/components/StatusBadge";
+import { generateStatementPDF } from "@/lib/pdf";
 
 interface StatementEntry {
   date: string;
@@ -145,8 +146,18 @@ export default function CompanyDetail() {
 
         <TabsContent value="statement">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Account Statement</CardTitle>
+              {statement.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => generateStatementPDF(company, statement)}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export PDF
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {statement.length > 0 ? (

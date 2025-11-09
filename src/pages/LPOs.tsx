@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getLPOs, saveLPOs, getDeliveries, saveDeliveries, generateDeliveryNumber, generateId } from "@/lib/storage";
-import { LPO, Delivery } from "@/types";
+import { getLPOs, saveLPOs, getDeliveries, saveDeliveries, generateDeliveryNumber, generateId, getInvoices, saveInvoices, generateInvoiceNumber } from "@/lib/storage";
+import { LPO, Delivery, Invoice } from "@/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CreateLPODialog } from "@/components/CreateLPODialog";
-import { CheckCircle, Download } from "lucide-react";
+import { CheckCircle, Download, FileText } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { generateLPOPDF } from "@/lib/pdf";
 
@@ -45,6 +45,31 @@ export default function LPOs() {
 
     toast({ title: "Success", description: "LPO marked as delivered" });
     loadLPOs();
+  };
+
+  const handleCreateInvoice = (lpo: LPO) => {
+    const newInvoice: Invoice = {
+      id: generateId(),
+      invoiceNo: generateInvoiceNumber(),
+      companyId: lpo.companyId,
+      companyName: lpo.companyName,
+      date: new Date().toISOString().split("T")[0],
+      items: lpo.items,
+      subtotal: lpo.totalAmount,
+      totalAmount: lpo.totalAmount,
+      amountPaid: 0,
+      balance: lpo.totalAmount,
+      status: "unpaid",
+      createdAt: new Date().toISOString(),
+    };
+
+    const invoices = getInvoices();
+    saveInvoices([...invoices, newInvoice]);
+
+    toast({ 
+      title: "Success", 
+      description: `Invoice ${newInvoice.invoiceNo} created from LPO ${lpo.lpoNumber}` 
+    });
   };
 
   const getPaymentStatusColor = (status: string) => {
@@ -109,6 +134,14 @@ export default function LPOs() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCreateInvoice(lpo)}
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Create Invoice
+                        </Button>
                         {lpo.status === "pending" && (
                           <Button
                             size="sm"

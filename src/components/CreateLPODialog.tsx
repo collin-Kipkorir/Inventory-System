@@ -19,6 +19,8 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedCompany, setSelectedCompany] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [manualLPONumber, setManualLPONumber] = useState("");
+  const [useAutoLPONumber, setUseAutoLPONumber] = useState(true);
   const [items, setItems] = useState<InvoiceItem[]>([
     { productId: "", productName: "", quantity: 1, unit: "", unitPrice: 0, total: 0 },
   ]);
@@ -57,13 +59,27 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
     setItems(newItems);
   };
 
-  const calculateTotal = () => {
+  const calculateSubtotal = () => {
     return items.reduce((sum, item) => sum + item.total, 0);
+  };
+
+  const calculateVAT = () => {
+    const subtotal = calculateSubtotal();
+    return subtotal * 0.16;
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() + calculateVAT();
   };
 
   const handleSubmit = () => {
     if (!selectedCompany) {
       toast({ title: "Error", description: "Please select a company", variant: "destructive" });
+      return;
+    }
+
+    if (!useAutoLPONumber && !manualLPONumber.trim()) {
+      toast({ title: "Error", description: "Please enter an LPO number", variant: "destructive" });
       return;
     }
 
@@ -75,13 +91,18 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
     const company = companies.find((c) => c.id === selectedCompany);
     if (!company) return;
 
+    const subtotal = calculateSubtotal();
+    const vat = calculateVAT();
     const totalAmount = calculateTotal();
+
     const newLPO: LPO = {
       id: generateId(),
-      lpoNumber: generateLPONumber(),
+      lpoNumber: useAutoLPONumber ? generateLPONumber() : manualLPONumber.trim(),
       companyId: company.id,
       companyName: company.name,
       items,
+      subtotal,
+      vat,
       totalAmount,
       amountPaid: 0,
       balance: totalAmount,
@@ -103,6 +124,8 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
   const resetForm = () => {
     setSelectedCompany("");
     setDate(new Date().toISOString().split("T")[0]);
+    setManualLPONumber("");
+    setUseAutoLPONumber(true);
     setItems([{ productId: "", productName: "", quantity: 1, unit: "", unitPrice: 0, total: 0 }]);
   };
 
@@ -119,7 +142,7 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
           <DialogTitle>Create New LPO</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Company</Label>
               <Select value={selectedCompany} onValueChange={setSelectedCompany}>
@@ -142,6 +165,31 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
           </div>
 
           <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="autoLPO"
+                checked={useAutoLPONumber}
+                onChange={(e) => setUseAutoLPONumber(e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
+              <Label htmlFor="autoLPO" className="text-sm font-normal cursor-pointer">
+                Auto-generate LPO Number
+              </Label>
+            </div>
+            {!useAutoLPONumber && (
+              <div className="space-y-2">
+                <Label>LPO Number</Label>
+                <Input
+                  placeholder="Enter LPO number"
+                  value={manualLPONumber}
+                  onChange={(e) => setManualLPONumber(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Items</Label>
               <Button type="button" size="sm" onClick={addItem}>
@@ -150,41 +198,42 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
               </Button>
             </div>
             {items.map((item, index) => (
-              <div key={index} className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <Label>Product</Label>
+              <div key={index} className="flex flex-col md:flex-row gap-2 items-end">
+                <div className="flex-1 w-full">
+                  <Label className="text-xs md:text-sm">Product</Label>
                   <Select
                     value={item.productId}
                     onValueChange={(value) => updateItem(index, "productId", value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="text-xs md:text-sm">
                       <SelectValue placeholder="Select product" />
                     </SelectTrigger>
                     <SelectContent>
                       {products.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>
+                        <SelectItem key={product.id} value={product.id} className="text-xs md:text-sm">
                           {product.name} - KES {product.unitPrice}/{product.unit}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="w-24">
-                  <Label>Quantity</Label>
+                <div className="w-full md:w-24">
+                  <Label className="text-xs md:text-sm">Quantity</Label>
                   <Input
                     type="number"
                     min="1"
                     value={item.quantity}
                     onChange={(e) => updateItem(index, "quantity", parseInt(e.target.value) || 0)}
+                    className="text-xs md:text-sm"
                   />
                 </div>
-                <div className="w-32">
-                  <Label>Unit Price</Label>
-                  <Input type="number" value={item.unitPrice} readOnly className="bg-muted" />
+                <div className="w-full md:w-32">
+                  <Label className="text-xs md:text-sm">Unit Price</Label>
+                  <Input type="number" value={item.unitPrice} readOnly className="bg-muted text-xs md:text-sm" />
                 </div>
-                <div className="w-32">
-                  <Label>Total</Label>
-                  <Input type="number" value={item.total} readOnly className="bg-muted" />
+                <div className="w-full md:w-32">
+                  <Label className="text-xs md:text-sm">Total</Label>
+                  <Input type="number" value={item.total} readOnly className="bg-muted text-xs md:text-sm" />
                 </div>
                 {items.length > 1 && (
                   <Button type="button" variant="destructive" size="icon" onClick={() => removeItem(index)}>
@@ -195,13 +244,17 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
             ))}
           </div>
 
-          <div className="flex justify-between items-center pt-4 border-t">
-            <div className="text-lg font-semibold">Total Amount: KES {calculateTotal().toLocaleString()}</div>
-            <div className="space-x-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center pt-4 border-t gap-4">
+            <div className="text-sm md:text-base space-y-1">
+              <div>Subtotal: KES {calculateSubtotal().toLocaleString()}</div>
+              <div className="text-muted-foreground">VAT (16%): KES {calculateVAT().toLocaleString()}</div>
+              <div className="font-semibold text-lg">Total: KES {calculateTotal().toLocaleString()}</div>
+            </div>
+            <div className="flex space-x-2 w-full md:w-auto">
+              <Button variant="outline" onClick={() => setOpen(false)} className="flex-1 md:flex-none">
                 Cancel
               </Button>
-              <Button onClick={handleSubmit}>Create LPO</Button>
+              <Button onClick={handleSubmit} className="flex-1 md:flex-none">Create LPO</Button>
             </div>
           </div>
         </div>

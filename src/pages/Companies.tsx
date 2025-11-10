@@ -171,9 +171,10 @@ export default function Companies() {
         <CardHeader>
           <CardTitle>All Companies</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           {companies.length > 0 ? (
-            <Table>
+            <div className="min-w-[700px]">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Company Name</TableHead>
@@ -219,6 +220,7 @@ export default function Companies() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           ) : (
             <p className="text-center text-muted-foreground py-8">No companies added yet</p>
           )}

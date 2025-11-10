@@ -38,11 +38,15 @@ export default function CompanyDetail() {
     setCompany(foundCompany);
     
     const allInvoices = getInvoices();
-    const companyInvoices = allInvoices.filter((inv) => inv.companyId === id);
+    const companyInvoices = allInvoices
+      .filter((inv) => inv.companyId === id)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Most recent first
     setInvoices(companyInvoices);
 
     const allPayments = getPayments();
-    const companyPayments = allPayments.filter((pay) => pay.companyId === id);
+    const companyPayments = allPayments
+      .filter((pay) => pay.companyId === id)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Most recent first
     setPayments(companyPayments);
   }, [id, navigate]);
 
@@ -86,7 +90,8 @@ export default function CompanyDetail() {
       }
     });
 
-    return entries;
+    // Reverse to show most recent first (like bank statements)
+    return entries.reverse();
   }, [invoices, payments]);
 
   if (!company) {
@@ -131,7 +136,7 @@ export default function CompanyDetail() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              KES {statement.length > 0 ? statement[statement.length - 1].balance.toLocaleString() : "0"}
+              KES {statement.length > 0 ? statement[0].balance.toLocaleString() : "0"}
             </div>
           </CardContent>
         </Card>
@@ -159,9 +164,10 @@ export default function CompanyDetail() {
                 </Button>
               )}
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               {statement.length > 0 ? (
-                <Table>
+                <div className="min-w-[700px]">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
@@ -191,6 +197,7 @@ export default function CompanyDetail() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">No transactions yet</p>
               )}
@@ -203,9 +210,10 @@ export default function CompanyDetail() {
             <CardHeader>
               <CardTitle>Invoices</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               {invoices.length > 0 ? (
-                <Table>
+                <div className="min-w-[700px]">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Invoice No</TableHead>
@@ -231,6 +239,7 @@ export default function CompanyDetail() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">No invoices yet</p>
               )}
@@ -243,9 +252,10 @@ export default function CompanyDetail() {
             <CardHeader>
               <CardTitle>Payments</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               {payments.length > 0 ? (
-                <Table>
+                <div className="min-w-[650px]">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Payment No</TableHead>
@@ -269,6 +279,7 @@ export default function CompanyDetail() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">No payments yet</p>
               )}

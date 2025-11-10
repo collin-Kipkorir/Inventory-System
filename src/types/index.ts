@@ -13,6 +13,7 @@ export interface Product {
   name: string;
   unit: string;
   unitPrice: number;
+  vatInclusive: boolean;
   createdAt: string;
 }
 
@@ -35,7 +36,7 @@ export interface Invoice {
   date: string;
   items: InvoiceItem[];
   subtotal: number;
-  tax?: number;
+  vat: number;
   totalAmount: number;
   amountPaid: number;
   balance: number;
@@ -65,6 +66,8 @@ export interface LPO {
   companyId: string;
   companyName: string;
   items: InvoiceItem[];
+  subtotal: number;
+  vat: number;
   totalAmount: number;
   amountPaid: number;
   balance: number;

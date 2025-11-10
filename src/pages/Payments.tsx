@@ -10,7 +10,10 @@ export default function Payments() {
   const [payments, setPayments] = useState<Payment[]>([]);
 
   const loadPayments = () => {
-    setPayments(getPayments());
+    const allPayments = getPayments();
+    // Sort by date descending (most recent first)
+    const sorted = allPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setPayments(sorted);
   };
 
   useEffect(() => {
@@ -44,9 +47,10 @@ export default function Payments() {
         <CardHeader>
           <CardTitle>All Payments</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           {payments.length > 0 ? (
-            <Table>
+            <div className="min-w-[800px]">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Payment No</TableHead>
@@ -78,6 +82,7 @@ export default function Payments() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           ) : (
             <p className="text-center text-muted-foreground py-8">No payments recorded yet</p>
           )}

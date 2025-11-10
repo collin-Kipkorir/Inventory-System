@@ -18,6 +18,7 @@ export default function Products() {
     name: "",
     unit: "",
     unitPrice: "",
+    vatInclusive: false,
   });
 
   useEffect(() => {
@@ -42,6 +43,7 @@ export default function Products() {
         name: formData.name,
         unit: formData.unit,
         unitPrice: parseFloat(formData.unitPrice),
+        vatInclusive: formData.vatInclusive,
         createdAt: new Date().toISOString(),
       };
       const updated = [...products, newProduct];
@@ -67,6 +69,7 @@ export default function Products() {
       name: product.name,
       unit: product.unit,
       unitPrice: product.unitPrice.toString(),
+      vatInclusive: product.vatInclusive || false,
     });
     setIsOpen(true);
   };
@@ -76,6 +79,7 @@ export default function Products() {
       name: "",
       unit: "",
       unitPrice: "",
+      vatInclusive: false,
     });
     setEditingProduct(null);
   };
@@ -131,6 +135,18 @@ export default function Products() {
                   required
                 />
               </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="vatInclusive"
+                  checked={formData.vatInclusive}
+                  onChange={(e) => setFormData({ ...formData, vatInclusive: e.target.checked })}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <Label htmlFor="vatInclusive" className="text-sm font-normal cursor-pointer">
+                  VAT Inclusive (16%)
+                </Label>
+              </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
                   Cancel
@@ -148,45 +164,55 @@ export default function Products() {
         <CardHeader>
           <CardTitle>All Products</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           {products.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product Name</TableHead>
-                  <TableHead>Unit</TableHead>
-                  <TableHead>Unit Price</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.unit}</TableCell>
-                    <TableCell>KES {product.unitPrice.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(product)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(product.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="min-w-[600px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product Name</TableHead>
+                    <TableHead>Unit</TableHead>
+                    <TableHead>Unit Price</TableHead>
+                    <TableHead>VAT</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {products.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="font-medium">{product.name}</TableCell>
+                      <TableCell>{product.unit}</TableCell>
+                      <TableCell>KES {product.unitPrice.toFixed(2)}</TableCell>
+                      <TableCell>
+                        {product.vatInclusive ? (
+                          <span className="text-xs text-success">Inclusive</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Not Included</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(product)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(product.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
             <p className="text-center text-muted-foreground py-8">No products added yet</p>
           )}

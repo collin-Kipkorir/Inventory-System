@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Invoice, LPO, Company } from "@/types";
+import { Invoice, LPO, Company, Delivery } from "@/types";
 
 interface StatementEntry {
   date: string;
@@ -51,11 +51,13 @@ export const generateInvoicePDF = (invoice: Invoice) => {
   // Totals
   const finalY = (doc as any).lastAutoTable.finalY || 100;
   doc.setFontSize(11);
-  doc.text(`Total Amount: KES ${invoice.totalAmount.toLocaleString()}`, 140, finalY + 15);
-  doc.text(`Amount Paid: KES ${invoice.amountPaid.toLocaleString()}`, 140, finalY + 22);
+  doc.text(`Subtotal: KES ${invoice.subtotal.toLocaleString()}`, 140, finalY + 12);
+  doc.text(`VAT (16%): KES ${invoice.vat.toLocaleString()}`, 140, finalY + 19);
+  doc.text(`Total Amount: KES ${invoice.totalAmount.toLocaleString()}`, 140, finalY + 26);
+  doc.text(`Amount Paid: KES ${invoice.amountPaid.toLocaleString()}`, 140, finalY + 33);
   doc.setFontSize(12);
   doc.setFont(undefined, "bold");
-  doc.text(`Balance: KES ${invoice.balance.toLocaleString()}`, 140, finalY + 30);
+  doc.text(`Balance: KES ${invoice.balance.toLocaleString()}`, 140, finalY + 41);
   
   doc.save(`Invoice_${invoice.invoiceNo}.pdf`);
 };
@@ -104,11 +106,13 @@ export const generateLPOPDF = (lpo: LPO) => {
   // Totals
   const finalY = (doc as any).lastAutoTable.finalY || 100;
   doc.setFontSize(11);
-  doc.text(`Total Amount: KES ${lpo.totalAmount.toLocaleString()}`, 140, finalY + 15);
-  doc.text(`Amount Paid: KES ${lpo.amountPaid.toLocaleString()}`, 140, finalY + 22);
+  doc.text(`Subtotal: KES ${lpo.subtotal.toLocaleString()}`, 140, finalY + 12);
+  doc.text(`VAT (16%): KES ${lpo.vat.toLocaleString()}`, 140, finalY + 19);
+  doc.text(`Total Amount: KES ${lpo.totalAmount.toLocaleString()}`, 140, finalY + 26);
+  doc.text(`Amount Paid: KES ${lpo.amountPaid.toLocaleString()}`, 140, finalY + 33);
   doc.setFontSize(12);
   doc.setFont(undefined, "bold");
-  doc.text(`Balance: KES ${lpo.balance.toLocaleString()}`, 140, finalY + 30);
+  doc.text(`Balance: KES ${lpo.balance.toLocaleString()}`, 140, finalY + 41);
   
   doc.save(`LPO_${lpo.lpoNumber}.pdf`);
 };
@@ -166,4 +170,64 @@ export const generateStatementPDF = (
   }
   
   doc.save(`Statement_${company.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`);
+};
+
+export const generateDeliveryNotePDF = (delivery: Delivery): void => {
+  const doc = new jsPDF();
+
+  // Header
+  doc.setFillColor(34, 197, 94); // Green for delivery
+  doc.rect(0, 0, 210, 40, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.setFont("helvetica", "bold");
+  doc.text("DELIVERY NOTE", 105, 20, { align: "center" });
+  doc.setFontSize(10);
+  doc.text(delivery.deliveryNo, 105, 30, { align: "center" });
+
+  // Reset text color
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "normal");
+
+  // Company details
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("Delivered To:", 15, 50);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(delivery.companyName, 15, 58);
+
+  // Delivery details
+  doc.text(`Date: ${new Date(delivery.date).toLocaleDateString()}`, 150, 50);
+  if (delivery.lpoNumber) {
+    doc.text(`LPO Reference: ${delivery.lpoNumber}`, 150, 58);
+  }
+
+  // Items table
+  autoTable(doc, {
+    startY: 70,
+    head: [["Product", "Quantity", "Unit", "Remarks"]],
+    body: delivery.items.map((item) => [
+      item.productName,
+      item.quantity.toString(),
+      item.unit,
+      "Delivered",
+    ]),
+    theme: "grid",
+    headStyles: { fillColor: [34, 197, 94] },
+  });
+
+  const finalY = (doc as any).lastAutoTable.finalY || 70;
+
+  // Signature section
+  doc.setFontSize(10);
+  doc.text("Received By:", 15, finalY + 30);
+  doc.line(15, finalY + 50, 80, finalY + 50);
+  doc.text("Signature", 15, finalY + 55);
+
+  doc.text("Delivered By:", 120, finalY + 30);
+  doc.line(120, finalY + 50, 185, finalY + 50);
+  doc.text("Signature", 120, finalY + 55);
+
+  doc.save(`delivery-note-${delivery.deliveryNo}.pdf`);
 };

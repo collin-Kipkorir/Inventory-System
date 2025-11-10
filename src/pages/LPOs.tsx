@@ -15,7 +15,10 @@ export default function LPOs() {
   const [lpos, setLpos] = useState<LPO[]>([]);
 
   const loadLPOs = () => {
-    setLpos(getLPOs());
+    const allLPOs = getLPOs();
+    // Sort by date descending (most recent first)
+    const sorted = allLPOs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setLpos(sorted);
   };
 
   useEffect(() => {
@@ -57,7 +60,8 @@ export default function LPOs() {
       lpoNumber: lpo.lpoNumber,
       date: new Date().toISOString().split("T")[0],
       items: lpo.items,
-      subtotal: lpo.totalAmount,
+      subtotal: lpo.subtotal,
+      vat: lpo.vat,
       totalAmount: lpo.totalAmount,
       amountPaid: 0,
       balance: lpo.totalAmount,
@@ -101,9 +105,10 @@ export default function LPOs() {
         <CardHeader>
           <CardTitle>All LPOs</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           {lpos.length > 0 ? (
-            <Table>
+            <div className="min-w-[1000px]">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>LPO Number</TableHead>
@@ -168,6 +173,7 @@ export default function LPOs() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           ) : (
             <p className="text-center text-muted-foreground py-8">No LPOs created yet</p>
           )}

@@ -13,7 +13,10 @@ export default function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   useEffect(() => {
-    setInvoices(getInvoices());
+    const allInvoices = getInvoices();
+    // Sort by date descending (most recent first)
+    const sorted = allInvoices.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setInvoices(sorted);
   }, []);
 
   return (
@@ -27,9 +30,10 @@ export default function Invoices() {
         <CardHeader>
           <CardTitle>All Invoices</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           {invoices.length > 0 ? (
-            <Table>
+            <div className="min-w-[800px]">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Invoice No</TableHead>
@@ -78,6 +82,7 @@ export default function Invoices() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           ) : (
             <p className="text-center text-muted-foreground py-8">No invoices created yet</p>
           )}

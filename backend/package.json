@@ -1,0 +1,20 @@
+﻿{
+  "name": "pact-inventory-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --import tsx/cjs src/index.ts",
+    "start": "node src/index.ts"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "firebase-admin": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0"
+  }
+}

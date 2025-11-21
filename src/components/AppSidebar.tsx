@@ -17,10 +17,10 @@ const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Companies", url: "/companies", icon: Building2 },
   { title: "Products", url: "/products", icon: Package },
-  { title: "Invoices", url: "/invoices", icon: FileText },
-  { title: "Payments", url: "/payments", icon: DollarSign },
   { title: "LPOs", url: "/lpos", icon: ClipboardList },
   { title: "Deliveries", url: "/deliveries", icon: FileSpreadsheet },
+  { title: "Invoices", url: "/invoices", icon: FileText },
+    { title: "Payments", url: "/payments", icon: DollarSign },
 ];
 
 export function AppSidebar() {

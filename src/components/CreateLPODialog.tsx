@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getCompanies, getProducts, getLPOs, saveLPOs, generateLPONumber, generateId } from "@/lib/storage";
+import { listCompanies, listProducts, createLpo } from "@/lib/api";
 import { Company, Product, LPO, InvoiceItem } from "@/types";
 import { Plus, Trash2 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface CreateLPODialogProps {
   onLPOCreated: () => void;
@@ -21,16 +21,33 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [manualLPONumber, setManualLPONumber] = useState("");
   const [useAutoLPONumber, setUseAutoLPONumber] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [items, setItems] = useState<InvoiceItem[]>([
     { productId: "", productName: "", quantity: 1, unit: "", unitPrice: 0, total: 0 },
   ]);
 
   useEffect(() => {
     if (open) {
-      setCompanies(getCompanies());
-      setProducts(getProducts());
+      loadData();
     }
   }, [open]);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [companiesData, productsData] = await Promise.all([
+        listCompanies(),
+        listProducts(),
+      ]);
+      setCompanies(companiesData || []);
+      setProducts(productsData || []);
+    } catch (error) {
+      console.error("Failed to load data:", error);
+      toast.error("Failed to load companies and products");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const addItem = () => {
     setItems([...items, { productId: "", productName: "", quantity: 1, unit: "", unitPrice: 0, total: 0 }]);
@@ -72,19 +89,20 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
     return calculateSubtotal() + calculateVAT();
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedCompany) {
-      toast({ title: "Error", description: "Please select a company", variant: "destructive" });
-      return;
-    }
-
-    if (!useAutoLPONumber && !manualLPONumber.trim()) {
-      toast({ title: "Error", description: "Please enter an LPO number", variant: "destructive" });
+      toast.error("Please select a company");
       return;
     }
 
     if (items.some((item) => !item.productId || item.quantity <= 0)) {
-      toast({ title: "Error", description: "Please fill all item details", variant: "destructive" });
+      toast.error("Please fill all item details");
+      return;
+    }
+    
+    // Validate manual LPO number if not using auto-generation
+    if (!useAutoLPONumber && !manualLPONumber.trim()) {
+      toast.error("Please enter an LPO number");
       return;
     }
 
@@ -95,30 +113,47 @@ export function CreateLPODialog({ onLPOCreated }: CreateLPODialogProps) {
     const vat = calculateVAT();
     const totalAmount = calculateTotal();
 
-    const newLPO: LPO = {
-      id: generateId(),
-      lpoNumber: useAutoLPONumber ? generateLPONumber() : manualLPONumber.trim(),
-      companyId: company.id,
-      companyName: company.name,
-      items,
-      subtotal,
-      vat,
-      totalAmount,
-      amountPaid: 0,
-      balance: totalAmount,
-      date,
-      status: "pending",
-      paymentStatus: "unpaid",
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      setIsLoading(true);
+      
+      // Prepare LPO data
+      const lpoData: Record<string, unknown> = {
+        companyId: company.id,
+        companyName: company.name,
+        items,
+        subtotal,
+        vat,
+        totalAmount,
+        date,
+        status: "pending",
+      };
+      
+      // Add manual LPO number if not using auto-generation
+      // Send as 'manualLPONumber' for backend to process and store as 'lpoNumber'
+      if (!useAutoLPONumber) {
+        const trimmedNumber = manualLPONumber.trim();
+        if (trimmedNumber) {
+          lpoData.manualLPONumber = trimmedNumber;
+          console.log('✋ Frontend: Sending MANUAL LPO number:', trimmedNumber);
+        } else {
+          throw new Error("Manual LPO number cannot be empty");
+        }
+      } else {
+        console.log('✨ Frontend: Backend will AUTO-generate LPO number');
+      }
+      
+      await createLpo(lpoData);
 
-    const lpos = getLPOs();
-    saveLPOs([...lpos, newLPO]);
-
-    toast({ title: "Success", description: "LPO created successfully" });
-    setOpen(false);
-    onLPOCreated();
-    resetForm();
+      toast.success("LPO created successfully");
+      setOpen(false);
+      onLPOCreated();
+      resetForm();
+    } catch (error) {
+      console.error("Failed to create LPO:", error);
+      toast.error("Failed to create LPO");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const resetForm = () => {

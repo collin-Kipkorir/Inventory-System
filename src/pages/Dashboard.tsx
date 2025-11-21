@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { StatCard } from "@/components/StatCard";
 import { Building2, Package, FileText, DollarSign, AlertCircle } from "lucide-react";
-import { getCompanies, getProducts, getInvoices, getPayments } from "@/lib/storage";
+import { listCompanies, listProducts, listInvoices, listPayments, listLpos } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Company, Invoice, LPO } from "@/types";
+import { responsiveTypography, responsiveSpacing } from "@/lib/responsive";
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -13,47 +15,89 @@ export default function Dashboard() {
     totalPayments: 0,
     totalOutstanding: 0,
   });
-  const [topCompanies, setTopCompanies] = useState<Array<{ name: string; balance: number }>>([]);
+  const [topCompanies, setTopCompanies] = useState<Array<{ name: string; balance: number; lpoBalance: number }>>([]);
 
-  useEffect(() => {
-    const companies = getCompanies();
-    const products = getProducts();
-    const invoices = getInvoices();
-    const payments = getPayments();
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
-    const totalOutstanding = invoices.reduce((sum, inv) => sum + inv.balance, 0);
+  // Normalize invoice data to ensure all required fields are present
+  const normalizeInvoice = (invoice: Record<string, unknown>): Invoice => ({
+    ...(invoice as unknown as Invoice),
+    balance: Number(invoice.balance) || 0,
+    status: ((invoice.status as string) || "unpaid") as "paid" | "partial" | "unpaid",
+  });
 
-    // Calculate balances per company
-    const companyBalances = companies.map((company) => {
-      const companyInvoices = invoices.filter((inv) => inv.companyId === company.id);
-      const balance = companyInvoices.reduce((sum, inv) => sum + inv.balance, 0);
-      return { name: company.name, balance };
-    });
+  const loadDashboardData = useCallback(async () => {
+    try {
+      const [companies, products, invoices, payments, lpos] = await Promise.all([
+        listCompanies(),
+        listProducts(),
+        listInvoices(),
+        listPayments(),
+        listLpos(),
+      ]);
 
-    const topFive = companyBalances
-      .filter((c) => c.balance > 0)
-      .sort((a, b) => b.balance - a.balance)
-      .slice(0, 5);
+      const normalizedInvoices = (invoices || []).map(normalizeInvoice);
+      const normalizedLpos = (lpos || []).map((lpo: Record<string, unknown>): LPO => ({
+        ...(lpo as unknown as LPO),
+        balance: Number(lpo.balance) || 0,
+      }));
 
-    setStats({
-      totalCompanies: companies.length,
-      totalProducts: products.length,
-      totalInvoices: invoices.length,
-      totalPayments: payments.length,
-      totalOutstanding,
-    });
+      // Filter to only unpaid and partially paid invoices
+      // Note: We only show LPO balances on dashboard to avoid duplication
+      // (Invoices created from LPOs are already reflected in LPO balance)
+      const unpaidInvoices = normalizedInvoices.filter((inv) => inv.status === "unpaid" || inv.status === "partial");
+      
+      const totalLpoOutstanding = normalizedLpos.reduce((sum, l) => sum + l.balance, 0);
+      const totalOutstanding = totalLpoOutstanding;
 
-    setTopCompanies(topFive);
+      // Calculate total balances per company (LPOs only) - to avoid duplication with invoices
+      const companyBalances = (companies || []).map((company: Record<string, unknown>) => {
+        const companyLpos = normalizedLpos.filter((lpo) => lpo.companyId === company.id);
+        
+        const lpoBalance = companyLpos.reduce((sum, lpo) => sum + lpo.balance, 0);
+        const totalBalance = lpoBalance;
+        
+        return { 
+          name: String(company.name || ""), 
+          balance: totalBalance,
+          lpoBalance
+        };
+      });
+
+      // Only show companies with outstanding balance > 0
+      const topFive = companyBalances
+        .filter((c) => c.balance > 0)
+        .sort((a, b) => b.balance - a.balance)
+        .slice(0, 5);
+
+      setStats({
+        totalCompanies: (companies || []).length,
+        totalProducts: (products || []).length,
+        totalInvoices: normalizedInvoices.length,
+        totalPayments: (payments || []).length,
+        totalOutstanding,
+      });
+
+      setTopCompanies(topFive);
+    } catch (error) {
+      console.error("Failed to load dashboard data:", error);
+    }
   }, []);
 
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
   return (
-    <div className="space-y-6">
+    <div className={responsiveSpacing.pageGap}>
       <div>
-        <h2 className="text-3xl font-bold text-foreground">Dashboard</h2>
-        <p className="text-muted-foreground">Overview of your supply management system</p>
+        <h2 className={responsiveTypography.pageTitle}>Dashboard</h2>
+        <p className={`${responsiveTypography.small} text-muted-foreground`}>Overview of your supply management system</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:gap-4 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard
           title="Total Companies"
           value={stats.totalCompanies}
@@ -76,25 +120,28 @@ export default function Dashboard() {
         />
         <StatCard
           title="Outstanding Balance"
-          value={`KES ${stats.totalOutstanding.toLocaleString()}`}
+          value={`KES ${formatCurrency(stats.totalOutstanding)}`}
           icon={AlertCircle}
         />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Top 5 Companies with Outstanding Balance</CardTitle>
+          <CardTitle className={responsiveTypography.cardTitle}>Outstanding Balance</CardTitle>
         </CardHeader>
         <CardContent>
           {topCompanies.length > 0 ? (
-            <div className="space-y-4">
+            <div className={responsiveSpacing.cardGap}>
               {topCompanies.map((company, index) => (
-                <div key={index} className="flex items-center justify-between pb-3 border-b last:border-0">
-                  <div>
-                    <p className="font-medium text-foreground">{company.name}</p>
+                <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b last:border-0">
+                  <div className="min-w-0">
+                    <p className={`${responsiveTypography.body} font-medium text-foreground truncate`}>{company.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                     LPO: KES {formatCurrency(company.lpoBalance)}
+                    </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-foreground">KES {company.balance.toLocaleString()}</p>
+                    <p className="text-sm sm:text-base md:text-lg font-bold text-foreground">KES {formatCurrency(company.balance)}</p>
                     <StatusBadge status="unpaid" />
                   </div>
                 </div>

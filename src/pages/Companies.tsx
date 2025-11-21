@@ -8,14 +8,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Edit, Trash2, Eye } from "lucide-react";
 import { Company } from "@/types";
-import { getCompanies, saveCompanies, generateId } from "@/lib/storage";
+import { createCompany, listCompanies, updateCompany, deleteCompany } from "@/lib/api";
 import { toast } from "sonner";
+import { responsiveTypography, responsiveSpacing } from "@/lib/responsive";
 
 export default function Companies() {
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     contactPerson: "",
@@ -24,41 +26,62 @@ export default function Companies() {
     address: "",
   });
 
+  // Load companies from Firebase on mount
   useEffect(() => {
-    setCompanies(getCompanies());
+    loadCompanies();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (editingCompany) {
-      const updated = companies.map((c) =>
-        c.id === editingCompany.id ? { ...editingCompany, ...formData } : c
-      );
-      setCompanies(updated);
-      saveCompanies(updated);
-      toast.success("Company updated successfully");
-    } else {
-      const newCompany: Company = {
-        id: generateId(),
-        ...formData,
-        createdAt: new Date().toISOString(),
-      };
-      const updated = [...companies, newCompany];
-      setCompanies(updated);
-      saveCompanies(updated);
-      toast.success("Company added successfully");
+  const loadCompanies = async () => {
+    try {
+      setIsLoading(true);
+      const data = await listCompanies();
+      setCompanies(data || []);
+    } catch (error) {
+      console.error("Failed to load companies:", error);
+      toast.error("Failed to load companies");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsOpen(false);
-    resetForm();
   };
 
-  const handleDelete = (id: string) => {
-    const updated = companies.filter((c) => c.id !== id);
-    setCompanies(updated);
-    saveCompanies(updated);
-    toast.success("Company deleted successfully");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      if (editingCompany) {
+        // Update company
+        await updateCompany(editingCompany.id, formData);
+        toast.success("Company updated successfully");
+      } else {
+        // Create new company
+        await createCompany(formData);
+        toast.success("Company added successfully");
+      }
+
+      setIsOpen(false);
+      resetForm();
+      await loadCompanies(); // Reload from Firebase
+    } catch (error) {
+      console.error("Failed to save company:", error);
+      toast.error("Failed to save company");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      setIsLoading(true);
+      await deleteCompany(id);
+      toast.success("Company deleted successfully");
+      await loadCompanies(); // Reload from Firebase
+    } catch (error) {
+      console.error("Failed to delete company:", error);
+      toast.error("Failed to delete company");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleEdit = (company: Company) => {
@@ -85,25 +108,25 @@ export default function Companies() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className={responsiveSpacing.pageGap}>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-foreground">Companies</h2>
-          <p className="text-muted-foreground">Manage your business partners</p>
+          <h2 className={responsiveTypography.pageTitle}>Companies</h2>
+          <p className={`${responsiveTypography.small} text-muted-foreground`}>Manage your business partners</p>
         </div>
         <Dialog open={isOpen} onOpenChange={(open) => {
           setIsOpen(open);
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Add Company
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{editingCompany ? "Edit Company" : "Add New Company"}</DialogTitle>
+              <DialogTitle className={responsiveTypography.cardTitle}>{editingCompany ? "Edit Company" : "Add New Company"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -168,51 +191,54 @@ export default function Companies() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>All Companies</CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
+       
+        <CardContent className="overflow-x-auto p-2 sm:p-4">
           {companies.length > 0 ? (
-            <div className="min-w-[700px]">
+            <div className="min-w-full overflow-x-auto">
               <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Company Name</TableHead>
-                  <TableHead>Contact Person</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>Company Name</TableHead>
+                  <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>Contact Person</TableHead>
+                  <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>Phone</TableHead>
+                  <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>Email</TableHead>
+                  <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>Address</TableHead>
+                  <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {companies.map((company) => (
                   <TableRow key={company.id}>
-                    <TableCell className="font-medium">{company.name}</TableCell>
-                    <TableCell>{company.contactPerson}</TableCell>
-                    <TableCell>{company.phone}</TableCell>
-                    <TableCell>{company.email}</TableCell>
+                    <TableCell className={`${responsiveTypography.tableCell} font-medium whitespace-nowrap`}>{company.name}</TableCell>
+                    <TableCell className={`${responsiveTypography.tableCell} whitespace-nowrap`}>{company.contactPerson}</TableCell>
+                    <TableCell className={`${responsiveTypography.tableCell} whitespace-nowrap`}>{company.phone}</TableCell>
+                    <TableCell className={`${responsiveTypography.tableCell} whitespace-nowrap max-w-xs truncate`}>{company.email}</TableCell>
+                    <TableCell className={`${responsiveTypography.tableCell} whitespace-nowrap max-w-xs truncate`}>{company.address}</TableCell>
                     <TableCell>
-                      <div className="flex space-x-2">
+                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-1">
                         <Button
                           variant="outline"
                           size="sm"
+                          className="text-xs"
                           onClick={() => navigate(`/companies/${company.id}`)}
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-3 w-3" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
+                          className="text-xs"
                           onClick={() => handleEdit(company)}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3 w-3" />
                         </Button>
                         <Button
                           variant="destructive"
                           size="sm"
+                          className="text-xs"
                           onClick={() => handleDelete(company.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </TableCell>

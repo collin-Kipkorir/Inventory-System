@@ -6,23 +6,24 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  getCompanies,
-  getInvoices,
-  getLPOs,
-  getPayments,
-  savePayments,
-  saveInvoices,
-  saveLPOs,
-  generatePaymentNumber,
-  generateId,
-} from "@/lib/storage";
-import { Company, Invoice, LPO, Payment } from "@/types";
+  listCompanies,
+  listInvoices,
+  createPayment,
+  updateInvoice,
+  updateLpo,
+  listLpos,
+} from "@/lib/api";
+import { Company, Invoice, Payment, LPO } from "@/types";
 import { Plus } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface CreatePaymentDialogProps {
   onPaymentCreated: () => void;
 }
+
+const formatCurrency = (amount: number) => {
+  return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
 
 export function CreatePaymentDialog({ onPaymentCreated }: CreatePaymentDialogProps) {
   const [open, setOpen] = useState(false);
@@ -30,121 +31,179 @@ export function CreatePaymentDialog({ onPaymentCreated }: CreatePaymentDialogPro
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [lpos, setLpos] = useState<LPO[]>([]);
   const [selectedCompany, setSelectedCompany] = useState("");
-  const [referenceType, setReferenceType] = useState<"invoice" | "lpo">("invoice");
   const [selectedReference, setSelectedReference] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [amountPaid, setAmountPaid] = useState("");
   const [mode, setMode] = useState<"cash" | "mpesa" | "bank">("cash");
   const [remarks, setRemarks] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setCompanies(getCompanies());
-      setInvoices(getInvoices());
-      setLpos(getLPOs());
+      loadData();
     }
   }, [open]);
 
-  const filteredReferences = referenceType === "invoice"
-    ? invoices.filter((inv) => inv.companyId === selectedCompany && inv.balance > 0)
-    : lpos.filter((lpo) => lpo.companyId === selectedCompany && lpo.balance > 0);
-
-  const getMaxAmount = () => {
-    if (!selectedReference) return 0;
-    if (referenceType === "invoice") {
-      const invoice = invoices.find((inv) => inv.id === selectedReference);
-      return invoice?.balance || 0;
-    } else {
-      const lpo = lpos.find((l) => l.id === selectedReference);
-      return lpo?.balance || 0;
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [companiesData, invoicesData, lposData] = await Promise.all([
+        listCompanies(),
+        listInvoices(),
+        listLpos(),
+      ]);
+      setCompanies(companiesData || []);
+      setInvoices(invoicesData || []);
+      setLpos(lposData || []);
+    } catch (error) {
+      console.error("Failed to load data:", error);
+      toast.error("Failed to load payment data");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSubmit = () => {
+  const filteredReferences = invoices.filter((inv) => inv.companyId === selectedCompany && inv.balance > 0);
+
+  const getMaxAmount = () => {
+    if (!selectedReference) return 0;
+    const invoice = invoices.find((inv) => inv.id === selectedReference);
+    return invoice?.balance || 0;
+  };
+
+  const handleSubmit = async () => {
     if (!selectedCompany) {
-      toast({ title: "Error", description: "Please select a company", variant: "destructive" });
+      toast.error("Please select a company");
       return;
     }
 
     const amount = parseFloat(amountPaid);
     if (!amount || amount <= 0) {
-      toast({ title: "Error", description: "Please enter a valid amount", variant: "destructive" });
+      toast.error("Please enter a valid amount");
       return;
     }
 
     const maxAmount = getMaxAmount();
-    if (selectedReference && amount > maxAmount) {
-      toast({
-        title: "Error",
-        description: `Amount exceeds outstanding balance (KES ${maxAmount.toLocaleString()})`,
-        variant: "destructive",
-      });
+    // Add small tolerance for floating-point precision (0.01 cents)
+    if (selectedReference && amount > maxAmount + 0.01) {
+      toast.error(`Amount exceeds outstanding balance (KES ${formatCurrency(maxAmount)})`);
       return;
     }
 
     const company = companies.find((c) => c.id === selectedCompany);
     if (!company) return;
 
-    const newPayment: Payment = {
-      id: generateId(),
-      paymentNo: generatePaymentNumber(),
-      companyId: company.id,
-      companyName: company.name,
-      date,
-      amountPaid: amount,
-      mode,
-      remarks,
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      setIsLoading(true);
 
-    if (referenceType === "invoice" && selectedReference) {
-      const invoice = invoices.find((inv) => inv.id === selectedReference);
-      if (invoice) {
-        newPayment.invoiceId = invoice.id;
-        newPayment.invoiceNo = invoice.invoiceNo;
+      // Create payment
+      await createPayment({
+        companyId: company.id,
+        companyName: company.name,
+        amountPaid: amount,
+        mode,
+        date,
+        remarks,
+        ...(selectedReference
+          ? {
+              invoiceId: selectedReference,
+              invoiceNo: invoices.find((inv) => inv.id === selectedReference)?.invoiceNo,
+            }
+          : {}),
+      });
 
-        const updatedInvoice = {
-          ...invoice,
-          amountPaid: invoice.amountPaid + amount,
-          balance: invoice.balance - amount,
-        };
-        updatedInvoice.status =
-          updatedInvoice.balance === 0 ? "paid" : updatedInvoice.balance < updatedInvoice.totalAmount ? "partial" : "unpaid";
+      // Update invoice balance
+      if (selectedReference) {
+        const invoice = invoices.find((inv) => inv.id === selectedReference);
+        if (invoice) {
+          const newBalance = invoice.balance - amount;
+          // Use small tolerance for floating-point precision
+          const isFullyPaid = Math.abs(newBalance) < 0.01;
+          const newStatus = isFullyPaid ? "paid" : newBalance > 0 ? "partial" : "unpaid";
+          await updateInvoice(invoice.id, {
+            amountPaid: invoice.amountPaid + amount,
+            balance: isFullyPaid ? 0 : newBalance,
+            status: newStatus,
+          });
 
-        const allInvoices = getInvoices();
-        saveInvoices(allInvoices.map((inv) => (inv.id === invoice.id ? updatedInvoice : inv)));
+          // Update corresponding LPO payment status if it exists
+          if (invoice.lpoId) {
+            console.log('💳 Payment for invoice linked to LPO ID:', invoice.lpoId, 'LPO Number:', invoice.lpoNumber);
+            const lpo = lpos.find((l) => l.id === invoice.lpoId);
+            if (lpo) {
+              console.log('✅ Found LPO:', lpo.lpoNumber, 'Current status:', lpo.paymentStatus);
+              
+              // Calculate total invoiced amount for this LPO from all related invoices
+              const relatedInvoices = invoices.filter((inv) => inv.lpoId === invoice.lpoId);
+              console.log('📋 Related invoices for this LPO:', relatedInvoices.length);
+              
+              const totalInvoiced = relatedInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+              
+              // Calculate total paid for all invoices related to this LPO
+              let totalPaidForLpo = 0;
+              for (const inv of relatedInvoices) {
+                if (inv.id === invoice.id) {
+                  // Use the updated amount paid for the current invoice
+                  totalPaidForLpo += invoice.amountPaid + amount;
+                  console.log(`  Invoice ${inv.invoiceNo} (current): ${invoice.amountPaid} + ${amount} = ${invoice.amountPaid + amount}`);
+                } else {
+                  totalPaidForLpo += inv.amountPaid;
+                  console.log(`  Invoice ${inv.invoiceNo}: ${inv.amountPaid}`);
+                }
+              }
+
+              // Determine LPO payment status
+              let lpoPaymentStatus: "paid" | "partial" | "unpaid";
+              if (totalPaidForLpo === 0) {
+                lpoPaymentStatus = "unpaid";
+              } else if (totalPaidForLpo >= totalInvoiced) {
+                lpoPaymentStatus = "paid";
+              } else {
+                lpoPaymentStatus = "partial";
+              }
+
+              console.log(`💰 Totals - Invoiced: ${totalInvoiced}, Paid: ${totalPaidForLpo}, Status: ${lpoPaymentStatus}`);
+
+              // Update LPO with new payment status and amounts
+              const lpoNewBalance = totalInvoiced - totalPaidForLpo;
+              await updateLpo(lpo.id, {
+                paymentStatus: lpoPaymentStatus,
+                amountPaid: totalPaidForLpo,
+                balance: lpoNewBalance,
+              });
+
+              console.log(
+                `✅ Updated LPO ${lpo.lpoNumber}: paymentStatus=${lpoPaymentStatus}, amountPaid=${totalPaidForLpo}, balance=${lpoNewBalance}`
+              );
+            } else {
+              console.warn('❌ LPO not found with ID:', invoice.lpoId);
+            }
+          } else {
+            console.log('ℹ️ Invoice not linked to any LPO');
+          }
+        }
       }
-    } else if (referenceType === "lpo" && selectedReference) {
-      const lpo = lpos.find((l) => l.id === selectedReference);
-      if (lpo) {
-        newPayment.lpoId = lpo.id;
-        newPayment.lpoNumber = lpo.lpoNumber;
 
-        const updatedLPO = {
-          ...lpo,
-          amountPaid: lpo.amountPaid + amount,
-          balance: lpo.balance - amount,
-        };
-        updatedLPO.paymentStatus =
-          updatedLPO.balance === 0 ? "paid" : updatedLPO.balance < updatedLPO.totalAmount ? "partial" : "unpaid";
-
-        const allLPOs = getLPOs();
-        saveLPOs(allLPOs.map((l) => (l.id === lpo.id ? updatedLPO : l)));
-      }
+      toast.success("Payment recorded successfully");
+      setOpen(false);
+      onPaymentCreated();
+      
+      // Reload invoices and LPOs to show updated payment status
+      await Promise.all([
+        loadData(),
+      ]);
+      
+      resetForm();
+    } catch (error) {
+      console.error("Failed to record payment:", error);
+      toast.error("Failed to record payment");
+    } finally {
+      setIsLoading(false);
     }
-
-    const payments = getPayments();
-    savePayments([...payments, newPayment]);
-
-    toast({ title: "Success", description: "Payment recorded successfully" });
-    setOpen(false);
-    onPaymentCreated();
-    resetForm();
   };
 
   const resetForm = () => {
     setSelectedCompany("");
-    setReferenceType("invoice");
     setSelectedReference("");
     setDate(new Date().toISOString().split("T")[0]);
     setAmountPaid("");
@@ -188,33 +247,20 @@ export function CreatePaymentDialog({ onPaymentCreated }: CreatePaymentDialogPro
           </div>
 
           <div className="space-y-2">
-            <Label>Reference Type</Label>
-            <Select value={referenceType} onValueChange={(value: "invoice" | "lpo") => setReferenceType(value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="invoice">Invoice</SelectItem>
-                <SelectItem value="lpo">LPO</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>{referenceType === "invoice" ? "Invoice" : "LPO"} (Optional)</Label>
+            <Label>Invoice (Optional)</Label>
             <Select
               value={selectedReference}
               onValueChange={setSelectedReference}
               disabled={!selectedCompany}
             >
               <SelectTrigger>
-                <SelectValue placeholder={`Select ${referenceType}`} />
+                <SelectValue placeholder="Select invoice" />
               </SelectTrigger>
               <SelectContent>
-                {filteredReferences.map((ref: any) => (
+                {filteredReferences.map((ref: Invoice) => (
                   <SelectItem key={ref.id} value={ref.id}>
-                    {referenceType === "invoice" ? ref.invoiceNo : ref.lpoNumber} - Balance: KES{" "}
-                    {ref.balance.toLocaleString()}
+                    {ref.invoiceNo} - Balance: KES{" "}
+                    {formatCurrency(ref.balance)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -233,7 +279,7 @@ export function CreatePaymentDialog({ onPaymentCreated }: CreatePaymentDialogPro
                 step="0.01"
               />
               {selectedReference && (
-                <p className="text-sm text-muted-foreground">Max: KES {getMaxAmount().toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">Max: KES {formatCurrency(getMaxAmount())}</p>
               )}
             </div>
             <div className="space-y-2">

@@ -3,19 +3,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { getDeliveries } from "@/lib/storage";
+import { listDeliveries } from "@/lib/api";
 import { Delivery } from "@/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { generateDeliveryNotePDF } from "@/lib/pdf";
+import { toast } from "sonner";
 
 export default function Deliveries() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadDeliveries = async () => {
+    try {
+      setIsLoading(true);
+      const data = await listDeliveries();
+      // Sort by date descending (most recent first)
+      const sorted = (data || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setDeliveries(sorted);
+    } catch (error) {
+      console.error("Failed to load deliveries:", error);
+      toast.error("Failed to load deliveries");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const allDeliveries = getDeliveries();
-    // Sort by date descending (most recent first)
-    const sorted = allDeliveries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    setDeliveries(sorted);
+    loadDeliveries();
   }, []);
 
   return (
@@ -26,9 +40,7 @@ export default function Deliveries() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>All Deliveries</CardTitle>
-        </CardHeader>
+      
         <CardContent className="overflow-x-auto">
           {deliveries.length > 0 ? (
             <div className="min-w-[700px]">

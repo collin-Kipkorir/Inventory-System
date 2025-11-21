@@ -7,13 +7,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { Product } from "@/types";
-import { getProducts, saveProducts, generateId } from "@/lib/storage";
+import { createProduct, listProducts, updateProduct, deleteProduct } from "@/lib/api";
 import { toast } from "sonner";
+import { responsiveTypography, responsiveSpacing } from "@/lib/responsive";
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     unit: "",
@@ -22,45 +24,66 @@ export default function Products() {
   });
 
   useEffect(() => {
-    setProducts(getProducts());
+    loadProducts();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (editingProduct) {
-      const updated = products.map((p) =>
-        p.id === editingProduct.id
-          ? { ...editingProduct, ...formData, unitPrice: parseFloat(formData.unitPrice) }
-          : p
-      );
-      setProducts(updated);
-      saveProducts(updated);
-      toast.success("Product updated successfully");
-    } else {
-      const newProduct: Product = {
-        id: generateId(),
-        name: formData.name,
-        unit: formData.unit,
-        unitPrice: parseFloat(formData.unitPrice),
-        vatInclusive: formData.vatInclusive,
-        createdAt: new Date().toISOString(),
-      };
-      const updated = [...products, newProduct];
-      setProducts(updated);
-      saveProducts(updated);
-      toast.success("Product added successfully");
+  const loadProducts = async () => {
+    try {
+      setIsLoading(true);
+      const data = await listProducts();
+      setProducts(data || []);
+    } catch (error) {
+      console.error("Failed to load products:", error);
+      toast.error("Failed to load products");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsOpen(false);
-    resetForm();
   };
 
-  const handleDelete = (id: string) => {
-    const updated = products.filter((p) => p.id !== id);
-    setProducts(updated);
-    saveProducts(updated);
-    toast.success("Product deleted successfully");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      if (editingProduct) {
+        // Update product
+        await updateProduct(editingProduct.id, {
+          ...formData,
+          unitPrice: parseFloat(formData.unitPrice),
+        });
+        toast.success("Product updated successfully");
+      } else {
+        // Create new product
+        await createProduct({
+          ...formData,
+          unitPrice: parseFloat(formData.unitPrice),
+        });
+        toast.success("Product added successfully");
+      }
+
+      setIsOpen(false);
+      resetForm();
+      await loadProducts(); // Reload from Firebase
+    } catch (error) {
+      console.error("Failed to save product:", error);
+      toast.error("Failed to save product");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      setIsLoading(true);
+      await deleteProduct(id);
+      toast.success("Product deleted successfully");
+      await loadProducts(); // Reload from Firebase
+    } catch (error) {
+      console.error("Failed to delete product:", error);
+      toast.error("Failed to delete product");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleEdit = (product: Product) => {
@@ -85,34 +108,35 @@ export default function Products() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className={responsiveSpacing.pageGap}>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-foreground">Products</h2>
-          <p className="text-muted-foreground">Manage your product catalog</p>
+          <h2 className={responsiveTypography.pageTitle}>Products</h2>
+          <p className={`${responsiveTypography.small} text-muted-foreground`}>Manage your product catalog</p>
         </div>
         <Dialog open={isOpen} onOpenChange={(open) => {
           setIsOpen(open);
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Add Product
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
+              <DialogTitle className={responsiveTypography.cardTitle}>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Product Name</Label>
+                <Label htmlFor="name" className={responsiveTypography.label}>Product Name</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
+                  className={responsiveTypography.body}
                 />
               </div>
               <div className="space-y-2">
@@ -161,50 +185,49 @@ export default function Products() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>All Products</CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="overflow-x-auto p-2 sm:p-4">
           {products.length > 0 ? (
-            <div className="min-w-[600px]">
+            <div className="min-w-full overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Product Name</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Unit Price</TableHead>
-                    <TableHead>VAT</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>Product Name</TableHead>
+                    <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>Unit</TableHead>
+                    <TableHead className={`${responsiveTypography.tableHeader} text-right whitespace-nowrap`}>Unit Price</TableHead>
+                    <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>VAT</TableHead>
+                    <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {products.map((product) => (
                     <TableRow key={product.id}>
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell>{product.unit}</TableCell>
-                      <TableCell>KES {product.unitPrice.toFixed(2)}</TableCell>
+                      <TableCell className={`${responsiveTypography.tableCell} font-medium whitespace-nowrap`}>{product.name}</TableCell>
+                      <TableCell className={`${responsiveTypography.tableCell} whitespace-nowrap`}>{product.unit}</TableCell>
+                      <TableCell className={`${responsiveTypography.tableCell} text-right whitespace-nowrap`}>KES {product.unitPrice.toFixed(2)}</TableCell>
                       <TableCell>
                         {product.vatInclusive ? (
-                          <span className="text-xs text-success">Inclusive</span>
+                          <span className={`${responsiveTypography.small} text-success`}>Inclusive</span>
                         ) : (
-                          <span className="text-xs text-muted-foreground">Not Included</span>
+                          <span className={`${responsiveTypography.small} text-muted-foreground`}>Not Included</span>
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex space-x-2">
+                        <div className="flex flex-col sm:flex-row gap-1">
                           <Button
                             variant="outline"
                             size="sm"
+                            className="text-xs"
                             onClick={() => handleEdit(product)}
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-3 w-3" />
                           </Button>
                           <Button
                             variant="destructive"
                             size="sm"
+                            className="text-xs"
                             onClick={() => handleDelete(product.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </TableCell>

@@ -23,7 +23,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       manifest: {
-        name: 'Pact Inventory Management System',
+        name: 'Inventory Management System',
         short_name: 'Pact Inventory',
         description: 'A comprehensive supply chain and inventory management system with LPO, Invoice, and Payment tracking',
         theme_color: '#0f172a',

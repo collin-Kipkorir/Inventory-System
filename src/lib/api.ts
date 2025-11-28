@@ -1,7 +1,12 @@
 // Type-safe API client for frontend
-// Communicates with backend on http://localhost:4000/api
+// Communicates with backend. In production set VITE_API_BASE in your Vercel
+// environment variables to point to the backend URL (e.g. https://api.example.com)
+// If not set, defaults to the same-origin '/api' path so you can host a server
+// under the same origin (Vercel serverless functions, for instance).
 
-const API_BASE = '/api';
+const API_BASE = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE
+  ? String(import.meta.env.VITE_API_BASE)
+  : '/api';
 
 interface ApiResponse<T> {
   success: boolean;

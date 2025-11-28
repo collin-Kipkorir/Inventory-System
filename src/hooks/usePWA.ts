@@ -12,8 +12,20 @@ export function usePWA() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [autoPromptDismissed, setAutoPromptDismissed] = useState(false);
   const [autoPromptTriggered, setAutoPromptTriggered] = useState(false);
+  const [debugInfo, setDebugInfo] = useState('');
 
   useEffect(() => {
+    console.log('🔧 PWA Hook: Initializing...');
+
+    // Check basic PWA requirements
+    const checks = {
+      https: window.location.protocol === 'https:' || window.location.hostname === 'localhost',
+      serviceWorker: 'serviceWorker' in navigator,
+      manifestLink: !!document.querySelector('link[rel="manifest"]'),
+    };
+    console.log('📋 PWA Requirements:', checks);
+    setDebugInfo(`HTTPS: ${checks.https}, SW: ${checks.serviceWorker}, Manifest: ${checks.manifestLink}`);
+
     // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
@@ -28,6 +40,7 @@ export function usePWA() {
 
     // Handle beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log('🎉 beforeinstallprompt event fired!');
       e.preventDefault();
       setDeferredPrompt(e as PWAInstallPrompt);
       setIsInstallable(true);
@@ -36,15 +49,21 @@ export function usePWA() {
 
     // Handle app installed event
     const handleAppInstalled = () => {
+      console.log('✅ appinstalled event fired - app installed!');
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
-      console.log('✅ App installed successfully');
     };
 
     // Handle online/offline events
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    const handleOnline = () => {
+      console.log('🟢 Online');
+      setIsOnline(true);
+    };
+    const handleOffline = () => {
+      console.log('🔴 Offline');
+      setIsOnline(false);
+    };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -53,6 +72,7 @@ export function usePWA() {
 
     // Check if app was already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
+      console.log('📦 App is running in standalone mode (already installed)');
       setIsInstalled(true);
     }
 
@@ -132,5 +152,6 @@ export function usePWA() {
     autoPromptDismissed,
     dismissAutoPrompt: () => setAutoPromptDismissed(true),
     autoPromptTriggered,
+    debugInfo,
   };
 }

@@ -12,11 +12,9 @@ export function PWAInstallBanner() {
   useEffect(() => {
     if (!isInstalled && !autoPromptDismissed) {
       const timer = setTimeout(() => {
-        // Only show if it looks like a PWA environment (has manifest, service worker registered, etc.)
-        // For now, always show as a fallback to help debug
-        if (isInstallable || process.env.NODE_ENV === 'development') {
+        // Show banner only when installable and not yet installed/dismissed
+        if (isInstallable) {
           setShowBanner(true);
-          console.log('📱 Showing install banner (fallback)');
         }
       }, 3000);
       return () => clearTimeout(timer);

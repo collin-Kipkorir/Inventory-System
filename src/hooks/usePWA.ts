@@ -12,19 +12,10 @@ export function usePWA() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [autoPromptDismissed, setAutoPromptDismissed] = useState(false);
   const [autoPromptTriggered, setAutoPromptTriggered] = useState(false);
-  const [debugInfo, setDebugInfo] = useState('');
+  
 
   useEffect(() => {
-    console.log('🔧 PWA Hook: Initializing...');
-
-    // Check basic PWA requirements
-    const checks = {
-      https: window.location.protocol === 'https:' || window.location.hostname === 'localhost',
-      serviceWorker: 'serviceWorker' in navigator,
-      manifestLink: !!document.querySelector('link[rel="manifest"]'),
-    };
-    console.log('📋 PWA Requirements:', checks);
-    setDebugInfo(`HTTPS: ${checks.https}, SW: ${checks.serviceWorker}, Manifest: ${checks.manifestLink}`);
+    // Initialize PWA helpers
 
     // Register service worker
     if ('serviceWorker' in navigator) {
@@ -40,30 +31,21 @@ export function usePWA() {
 
     // Handle beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
-      console.log('🎉 beforeinstallprompt event fired!');
       e.preventDefault();
       setDeferredPrompt(e as PWAInstallPrompt);
       setIsInstallable(true);
-      console.log('📱 PWA install prompt available');
     };
 
     // Handle app installed event
     const handleAppInstalled = () => {
-      console.log('✅ appinstalled event fired - app installed!');
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
     };
 
     // Handle online/offline events
-    const handleOnline = () => {
-      console.log('🟢 Online');
-      setIsOnline(true);
-    };
-    const handleOffline = () => {
-      console.log('🔴 Offline');
-      setIsOnline(false);
-    };
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -72,7 +54,6 @@ export function usePWA() {
 
     // Check if app was already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
-      console.log('📦 App is running in standalone mode (already installed)');
       setIsInstalled(true);
     }
 
@@ -115,12 +96,11 @@ export function usePWA() {
 
   const installApp = async () => {
     if (!deferredPrompt) {
-      console.warn('❌ Install prompt not available - it may have been consumed by auto-trigger');
       return false;
     }
 
     try {
-      console.log('🔧 Manually triggering install prompt from button click');
+      
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       console.log(`User manual response: ${outcome}`);
@@ -129,14 +109,14 @@ export function usePWA() {
         setIsInstalled(true);
         setIsInstallable(false);
       } else {
-        console.log('User dismissed manual install prompt');
+        // user dismissed prompt
       }
 
       // Clear the prompt after use (it can only be called once)
       setDeferredPrompt(null);
       return outcome === 'accepted';
     } catch (err) {
-      console.error('Installation failed:', err);
+      // Installation failed
       // Clear on error too
       setDeferredPrompt(null);
       return false;
@@ -152,6 +132,5 @@ export function usePWA() {
     autoPromptDismissed,
     dismissAutoPrompt: () => setAutoPromptDismissed(true),
     autoPromptTriggered,
-    debugInfo,
   };
 }

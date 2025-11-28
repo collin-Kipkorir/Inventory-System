@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 firebase-service-account.json
+.vercel
+.env*.local
+backend/firebase-service-account.json

@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { read, push, update, remove } from '../backend/src/firebase';
+import { read, push, update, remove } from './firebase';
 
 const toArray = (obj: Record<string, unknown> | null | undefined) =>
   !obj ? [] : Object.entries(obj).map(([id, val]) => ({ id, ...((val as Record<string, unknown>) || {}) }));

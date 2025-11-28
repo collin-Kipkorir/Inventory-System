@@ -4,7 +4,7 @@ import { usePWA } from '@/hooks/usePWA';
 import { useState } from 'react';
 
 export function PWAInstallButton() {
-  const { isInstallable, isOnline, isInstalled, installApp } = usePWA();
+  const { isInstallable, isOnline, isInstalled, installApp, deferredPrompt } = usePWA();
   const [installing, setInstalling] = useState(false);
 
   const handleInstall = async () => {
@@ -12,6 +12,10 @@ export function PWAInstallButton() {
     const success = await installApp();
     if (!success) {
       setInstalling(false);
+      // Show alert if prompt was already consumed
+      if (!deferredPrompt && isInstallable) {
+        alert('Install prompt was already shown. Please dismiss and try again, or use your browser menu to install.');
+      }
     }
   };
 
@@ -41,10 +45,10 @@ export function PWAInstallButton() {
       {isInstallable && isOnline && (
         <Button
           onClick={handleInstall}
-          disabled={installing}
+          disabled={installing || !deferredPrompt}
           size="sm"
           className="gap-2"
-          title="Install app on your device"
+          title={deferredPrompt ? 'Install app on your device' : 'Install prompt already shown'}
         >
           <Download className="h-4 w-4" />
           {installing ? 'Installing...' : 'Install App'}

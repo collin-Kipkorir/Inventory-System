@@ -77,9 +77,15 @@ export function usePWA() {
           if (outcome === 'accepted') {
             setIsInstalled(true);
             setIsInstallable(false);
+          } else {
+            console.log('User dismissed auto-prompt');
           }
+          // Clear the prompt after it's been used (can only be called once)
+          setDeferredPrompt(null);
         } catch (err) {
           console.error('Auto-prompt failed:', err);
+          // Clear even if failed to prevent stuck state
+          setDeferredPrompt(null);
         }
       }, 3000);
 
@@ -88,22 +94,31 @@ export function usePWA() {
   }, [isInstallable, isInstalled, autoPromptDismissed, deferredPrompt, autoPromptTriggered]);
 
   const installApp = async () => {
-    if (!deferredPrompt) return false;
+    if (!deferredPrompt) {
+      console.warn('❌ Install prompt not available - it may have been consumed by auto-trigger');
+      return false;
+    }
 
     try {
+      console.log('🔧 Manually triggering install prompt from button click');
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response: ${outcome}`);
+      console.log(`User manual response: ${outcome}`);
 
       if (outcome === 'accepted') {
         setIsInstalled(true);
         setIsInstallable(false);
+      } else {
+        console.log('User dismissed manual install prompt');
       }
 
+      // Clear the prompt after use (it can only be called once)
       setDeferredPrompt(null);
       return outcome === 'accepted';
     } catch (err) {
       console.error('Installation failed:', err);
+      // Clear on error too
+      setDeferredPrompt(null);
       return false;
     }
   };
@@ -116,5 +131,6 @@ export function usePWA() {
     isInstalled,
     autoPromptDismissed,
     dismissAutoPrompt: () => setAutoPromptDismissed(true),
+    autoPromptTriggered,
   };
 }

@@ -1,6 +1,6 @@
 {
-  "name": "Pact Inventory Management System",
-  "short_name": "Pact Inventory",
+  "name": "IMS",
+  "short_name": "Inventory",
   "description": "A comprehensive supply chain and inventory management system with LPO, Invoice, and Payment tracking",
   "start_url": "/",
   "scope": "/",

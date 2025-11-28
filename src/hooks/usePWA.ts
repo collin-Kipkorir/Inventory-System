@@ -22,10 +22,10 @@ export function usePWA() {
       navigator.serviceWorker
         .register('/service-worker.js', { scope: '/' })
         .then((registration) => {
-          console.log('✅ ServiceWorker registered:', registration);
+          
         })
         .catch((err) => {
-          console.error('❌ ServiceWorker registration failed:', err);
+          
         });
     }
 
@@ -69,12 +69,12 @@ export function usePWA() {
   useEffect(() => {
     if (isInstallable && !isInstalled && !autoPromptDismissed && !autoPromptTriggered && deferredPrompt) {
       const autoPromptTimer = setTimeout(async () => {
-        console.log('📱 Auto-triggering install prompt after 3 seconds');
+      
         setAutoPromptTriggered(true);
         try {
           await deferredPrompt.prompt();
           const { outcome } = await deferredPrompt.userChoice;
-          console.log(`User auto-prompt response: ${outcome}`);
+         
           if (outcome === 'accepted') {
             setIsInstalled(true);
             setIsInstallable(false);
@@ -103,7 +103,7 @@ export function usePWA() {
       
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User manual response: ${outcome}`);
+   
 
       if (outcome === 'accepted') {
         setIsInstalled(true);

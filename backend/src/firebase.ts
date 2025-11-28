@@ -74,14 +74,21 @@ try {
     }
   }
 } catch (e: unknown) {
-  console.warn('Firebase init error:', (e as any).message || e);
+  // Detailed error logging to aid debugging in serverless logs
+  try {
+    console.error('Firebase init error:', e);
+    if (e && typeof e === 'object' && 'stack' in e) console.error((e as any).stack);
+  } catch (err) {
+    console.warn('Firebase init error (failed to print stack):', (e as any).message || e);
+  }
 }
 
 function getDb() {
   try {
     if (admin.apps.length) return admin.database();
   } catch (e: unknown) {
-    console.warn('getDb:', (e as any).message || e);
+    console.error('getDb error:', e);
+    if (e && typeof e === 'object' && 'stack' in e) console.error((e as any).stack);
   }
   return null;
 }

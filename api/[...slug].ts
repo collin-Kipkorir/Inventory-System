@@ -233,6 +233,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Unknown route
     return sendJson(res, 404, { error: 'Not found' });
   } catch (e) {
+    // Log full error on server for Vercel function logs (temporary)
+    try {
+      console.error('API handler error:', e);
+      if (e && typeof e === 'object' && 'stack' in e) console.error((e as any).stack);
+    } catch (err) {
+      console.warn('Failed to log error stack:', err);
+    }
     return sendJson(res, 500, { error: String(e) });
   }
 }

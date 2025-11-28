@@ -5,6 +5,20 @@ import path from 'path';
 
 dotenv.config();
 
+// Safe debug: log presence and lengths of important env vars (do NOT log the secret values)
+try {
+  const hasFsa = !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  const fsaLen = process.env.FIREBASE_SERVICE_ACCOUNT_JSON ? process.env.FIREBASE_SERVICE_ACCOUNT_JSON.length : 0;
+  const hasGac = !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  const gacVal = process.env.GOOGLE_APPLICATION_CREDENTIALS || '';
+  const dbUrl = process.env.FIREBASE_DATABASE_URL || '';
+  console.log('ENV_CHECK: FIREBASE_SERVICE_ACCOUNT_JSON present=', hasFsa, 'length=', fsaLen);
+  console.log('ENV_CHECK: GOOGLE_APPLICATION_CREDENTIALS present=', hasGac, 'value=', gacVal ? '[non-empty-string]' : '[empty]');
+  console.log('ENV_CHECK: FIREBASE_DATABASE_URL=', dbUrl ? dbUrl : '[empty]');
+} catch (err) {
+  console.warn('ENV_CHECK failed:', err);
+}
+
 const url = process.env.FIREBASE_DATABASE_URL || 'https://betca-inventory-default-rtdb.firebaseio.com';
 
 try {

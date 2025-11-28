@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
+import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -20,6 +21,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
+      {/* Auto-trigger install banner after 3 seconds */}
+      <PWAInstallBanner />
     </SidebarProvider>
   );
 }

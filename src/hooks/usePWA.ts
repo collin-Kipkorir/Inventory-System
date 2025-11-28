@@ -10,6 +10,7 @@ export function usePWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<PWAInstallPrompt | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [autoPromptDismissed, setAutoPromptDismissed] = useState(false);
 
   useEffect(() => {
     // Register service worker
@@ -54,13 +55,24 @@ export function usePWA() {
       setIsInstalled(true);
     }
 
+    // Auto-trigger install prompt after 3 seconds if app is not installed and not dismissed
+    const autoPromptTimer = setTimeout(() => {
+      setIsInstallable((current) => {
+        if (current && !isInstalled && !autoPromptDismissed && deferredPrompt) {
+          console.log('📱 Auto-triggering install prompt after 3 seconds');
+        }
+        return current;
+      });
+    }, 3000);
+
     return () => {
+      clearTimeout(autoPromptTimer);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [isInstalled, autoPromptDismissed, deferredPrompt]);
 
   const installApp = async () => {
     if (!deferredPrompt) return false;
@@ -89,5 +101,7 @@ export function usePWA() {
     deferredPrompt,
     isOnline,
     isInstalled,
+    autoPromptDismissed,
+    dismissAutoPrompt: () => setAutoPromptDismissed(true),
   };
 }

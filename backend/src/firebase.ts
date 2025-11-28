@@ -11,18 +11,56 @@ try {
   if (!admin.apps.length) {
     let serviceAccount = null;
 
-    // Try to read from firebase-service-account.json in backend folder
-    const jsonPath = path.join(process.cwd(), 'firebase-service-account.json');
-    if (fs.existsSync(jsonPath)) {
-      console.log('📂 Found firebase-service-account.json');
-      const jsonContent = fs.readFileSync(jsonPath, 'utf8');
-      serviceAccount = JSON.parse(jsonContent);
+    // Priority for credential resolution (best for deployments):
+    // 1. FIREBASE_SERVICE_ACCOUNT_JSON env var (contains the JSON string)
+    // 2. GOOGLE_APPLICATION_CREDENTIALS env var — either a JSON string or a file path
+    // 3. backend/firebase-service-account.json file on disk (development convenience)
+
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      try {
+        console.log('📋 Using FIREBASE_SERVICE_ACCOUNT_JSON env var');
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON as string);
+      } catch (err) {
+        console.warn('⚠️  FIREBASE_SERVICE_ACCOUNT_JSON is present but could not be parsed as JSON');
+      }
     }
 
-    // If not found, try environment variable
-    if (!serviceAccount && process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-      console.log('📋 Using FIREBASE_SERVICE_ACCOUNT_JSON env var');
-      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    if (!serviceAccount && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      const gac = process.env.GOOGLE_APPLICATION_CREDENTIALS as string;
+      // If the env var looks like JSON (starts with '{') try parsing, otherwise treat as file path
+      if (gac.trim().startsWith('{')) {
+        try {
+          console.log('📋 Using GOOGLE_APPLICATION_CREDENTIALS env var as JSON string');
+          serviceAccount = JSON.parse(gac);
+        } catch (err) {
+          console.warn('⚠️  GOOGLE_APPLICATION_CREDENTIALS env var looks like JSON but could not be parsed');
+        }
+      } else {
+        const jsonPath = path.isAbsolute(gac) ? gac : path.join(process.cwd(), gac);
+        if (fs.existsSync(jsonPath)) {
+          try {
+            console.log(`📂 Found service account at path from GOOGLE_APPLICATION_CREDENTIALS: ${jsonPath}`);
+            const jsonContent = fs.readFileSync(jsonPath, 'utf8');
+            serviceAccount = JSON.parse(jsonContent);
+          } catch (err) {
+            console.warn('⚠️  Failed to read/parse service account JSON from GOOGLE_APPLICATION_CREDENTIALS path');
+          }
+        }
+      }
+    }
+
+    // Try to read from firebase-service-account.json in backend folder as a last resort
+    if (!serviceAccount) {
+      const jsonPath = path.join(process.cwd(), 'backend', 'firebase-service-account.json');
+      if (fs.existsSync(jsonPath)) {
+        try {
+          console.log('� Found backend/firebase-service-account.json (development only)');
+          const jsonContent = fs.readFileSync(jsonPath, 'utf8');
+          serviceAccount = JSON.parse(jsonContent);
+        } catch (err) {
+          console.warn('⚠️  Failed to read/parse backend/firebase-service-account.json');
+        }
+      }
     }
 
     if (serviceAccount) {

@@ -1,11 +1,27 @@
 import { Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePWA } from '@/hooks/usePWA';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export function PWAInstallBanner() {
   const { isInstallable, isInstalled, installApp, autoPromptDismissed, dismissAutoPrompt } = usePWA();
   const [installing, setInstalling] = useState(false);
+  const [showBanner, setShowBanner] = useState(false);
+
+  // Show banner after 3 seconds even if beforeinstallprompt hasn't fired (fallback for dev/non-PWA environments)
+  useEffect(() => {
+    if (!isInstalled && !autoPromptDismissed) {
+      const timer = setTimeout(() => {
+        // Only show if it looks like a PWA environment (has manifest, service worker registered, etc.)
+        // For now, always show as a fallback to help debug
+        if (isInstallable || process.env.NODE_ENV === 'development') {
+          setShowBanner(true);
+          console.log('📱 Showing install banner (fallback)');
+        }
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isInstalled, autoPromptDismissed, isInstallable]);
 
   const handleInstall = async () => {
     setInstalling(true);
@@ -15,8 +31,8 @@ export function PWAInstallBanner() {
     }
   };
 
-  // Only show if: installable, not installed, not already dismissed, and it's the auto-prompt (show immediately on 3s timer)
-  if (isInstalled || !isInstallable || autoPromptDismissed) {
+  // Only show if: not installed, not dismissed, and either installable or in dev mode
+  if (isInstalled || autoPromptDismissed || !showBanner) {
     return null;
   }
 
@@ -40,7 +56,10 @@ export function PWAInstallBanner() {
             {installing ? 'Installing...' : 'Install'}
           </Button>
           <button
-            onClick={dismissAutoPrompt}
+            onClick={() => {
+              dismissAutoPrompt();
+              setShowBanner(false);
+            }}
             className="p-1 hover:bg-blue-700 rounded transition-colors"
             title="Dismiss"
           >
@@ -51,3 +70,4 @@ export function PWAInstallBanner() {
     </div>
   );
 }
+

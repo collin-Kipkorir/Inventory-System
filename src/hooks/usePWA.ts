@@ -11,6 +11,7 @@ export function usePWA() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isInstalled, setIsInstalled] = useState(false);
   const [autoPromptDismissed, setAutoPromptDismissed] = useState(false);
+  const [autoPromptTriggered, setAutoPromptTriggered] = useState(false);
 
   useEffect(() => {
     // Register service worker
@@ -55,24 +56,36 @@ export function usePWA() {
       setIsInstalled(true);
     }
 
-    // Auto-trigger install prompt after 3 seconds if app is not installed and not dismissed
-    const autoPromptTimer = setTimeout(() => {
-      setIsInstallable((current) => {
-        if (current && !isInstalled && !autoPromptDismissed && deferredPrompt) {
-          console.log('📱 Auto-triggering install prompt after 3 seconds');
-        }
-        return current;
-      });
-    }, 3000);
-
     return () => {
-      clearTimeout(autoPromptTimer);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [isInstalled, autoPromptDismissed, deferredPrompt]);
+  }, []);
+
+  // Separate effect for auto-trigger after 3 seconds
+  useEffect(() => {
+    if (isInstallable && !isInstalled && !autoPromptDismissed && !autoPromptTriggered && deferredPrompt) {
+      const autoPromptTimer = setTimeout(async () => {
+        console.log('📱 Auto-triggering install prompt after 3 seconds');
+        setAutoPromptTriggered(true);
+        try {
+          await deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`User auto-prompt response: ${outcome}`);
+          if (outcome === 'accepted') {
+            setIsInstalled(true);
+            setIsInstallable(false);
+          }
+        } catch (err) {
+          console.error('Auto-prompt failed:', err);
+        }
+      }, 3000);
+
+      return () => clearTimeout(autoPromptTimer);
+    }
+  }, [isInstallable, isInstalled, autoPromptDismissed, deferredPrompt, autoPromptTriggered]);
 
   const installApp = async () => {
     if (!deferredPrompt) return false;

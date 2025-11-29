@@ -13,6 +13,11 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:4000',
         changeOrigin: true,
+      },
+      '/firebase': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/firebase/, ''),
       }
     }
   },
@@ -79,6 +84,7 @@ export default defineConfig({
           {
             urlPattern: /^https:\/\/.*/i,
             handler: 'NetworkFirst',
+            method: 'GET',
             options: {
               cacheName: 'pact-inventory-api-v1',
               expiration: {
@@ -90,6 +96,7 @@ export default defineConfig({
           {
             urlPattern: /^\/api\/.*/i,
             handler: 'NetworkFirst',
+            method: 'GET',
             options: {
               cacheName: 'pact-inventory-backend-v1',
               networkTimeoutSeconds: 5,

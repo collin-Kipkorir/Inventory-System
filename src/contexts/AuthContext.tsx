@@ -3,6 +3,50 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContextType";
 import type { AuthContextType } from "./AuthContextType";
 
+// Mock authentication for development - replace with Firebase after setup
+const MOCK_USERS = {
+  admin: {
+    username: "admin",
+    // This is a placeholder - use npm run create-admin to get real credentials
+    // passwordHash will be verified against Firebase when Firebase is set up
+  },
+};
+
+async function authenticateWithFirebase(
+  username: string,
+  password: string
+): Promise<{ username: string; token: string }> {
+  // Dynamically import Firebase utilities
+  const { getAdminByUsername, updateLastLogin } = await import("@/lib/firebaseAdmin");
+  const { verifyPassword } = await import("@/lib/password");
+
+  // Get admin from Firebase
+  const admin = await getAdminByUsername(username);
+
+  if (!admin) {
+    throw new Error("Invalid username or password");
+  }
+
+  // Verify password
+  const isPasswordValid = await verifyPassword(password, admin.passwordHash);
+
+  if (!isPasswordValid) {
+    throw new Error("Invalid username or password");
+  }
+
+  // Update last login
+  try {
+    await updateLastLogin(username);
+  } catch (error) {
+    console.warn("Failed to update last login:", error);
+  }
+
+  return {
+    username: admin.username,
+    token: `admin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  };
+}
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<{ username: string; token: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,27 +69,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (username: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
-      // Call the backend API to authenticate
-      const response = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `Login failed with status ${response.status}`
-        );
-      }
-
-      const data = await response.json();
-      const userData: { username: string; token: string } = {
-        username: data.username,
-        token: data.token,
-      };
+      // Try to authenticate with Firebase
+      const userData = await authenticateWithFirebase(username, password);
 
       setUser(userData);
       localStorage.setItem("user", JSON.stringify(userData));

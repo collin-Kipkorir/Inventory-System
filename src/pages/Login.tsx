@@ -46,7 +46,7 @@ export default function Login() {
                 className="w-16 h-16 rounded-lg shadow-lg"
               />
             </div>
-            <CardTitle className="text-2xl font-bold text-white">Inventory Management</CardTitle>
+            <CardTitle className="text-2xl font-bold text-white">IMS</CardTitle>
             <CardDescription className="text-slate-400">Admin Login</CardDescription>
           </CardHeader>
 
@@ -97,11 +97,13 @@ export default function Login() {
               </p>
             </div>
           </CardContent>
+          <div className="bg-slate-900/50 px-6 py-3 border-t border-slate-700 text-center">
+            <p className="text-xs text-slate-500">
+              Developed by <span className="font-semibold text-slate-400">Metacode Solutions</span>
+            </p>
+          </div>
         </Card>
 
-        <div className="mt-4 text-center text-xs text-slate-500">
-          <p>Inventory Management System v0.0.0</p>
-        </div>
       </div>
     </div>
   );

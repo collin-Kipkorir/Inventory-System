@@ -117,10 +117,19 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    height: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-size: 11.2px; /* 14px * 0.8 */
     zoom: 0.8; /* 80% zoom for PC */
+    height: 100%;
+  }
+
+  #root {
+    height: 100%;
   }
 
   h1 {

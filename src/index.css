@@ -118,18 +118,21 @@ All colors MUST be HSL.
   }
 
   html {
-    height: 100%;
+    overflow: hidden;
   }
 
   body {
     @apply bg-background text-foreground;
     font-size: 11.2px; /* 14px * 0.8 */
     zoom: 0.8; /* 80% zoom for PC */
-    height: 100%;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
   }
 
   #root {
-    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   h1 {

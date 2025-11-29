@@ -17,12 +17,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let importError: string | null = null;
 
     try {
-      const mod = await import('./firebase');
+      const mod = await import('../firebase');
       const admin = mod.default;
       firebaseInitialized = Array.isArray((admin as any).apps) ? (admin as any).apps.length > 0 : false;
     } catch (err) {
       importError = (err && err.stack) ? String((err as any).stack) : String(err);
-      console.error('health import ./firebase error:', importError);
+      console.error('health import ../firebase error:', importError);
     }
 
     const body = {

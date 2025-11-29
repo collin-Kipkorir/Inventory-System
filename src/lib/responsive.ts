@@ -4,41 +4,41 @@
  */
 
 export const responsiveTypography = {
-  // Page Titles (h1)
-  pageTitle: "text-2xl sm:text-3xl md:text-4xl font-bold",
+  // Page Titles (h4 reduced to 80%)
+  pageTitle: "text-lg sm:text-xl md:text-2xl font-bold",
 
-  // Section Titles (h2)
-  sectionTitle: "text-xl sm:text-2xl md:text-3xl font-bold",
+  // Section Titles (h3)
+  sectionTitle: "text-base sm:text-lg md:text-xl font-bold",
 
   // Card Titles (h3)
-  cardTitle: "text-lg sm:text-xl md:text-2xl font-bold",
+  cardTitle: "text-sm sm:text-base md:text-lg font-bold",
 
   // Table Headers
-  tableHeader: "text-xs sm:text-sm md:text-base font-semibold",
+  tableHeader: "text-[10px] sm:text-xs md:text-sm font-semibold",
 
   // Table Cells
-  tableCell: "text-xs sm:text-sm md:text-base",
+  tableCell: "text-[10px] sm:text-xs md:text-sm",
 
   // Labels
-  label: "text-xs sm:text-sm md:text-base font-medium",
+  label: "text-[10px] sm:text-xs md:text-sm font-medium",
 
   // Body Text
-  body: "text-xs sm:text-sm md:text-base",
+  body: "text-[10px] sm:text-xs md:text-sm",
 
   // Small Text (captions, descriptions)
-  small: "text-[10px] sm:text-xs md:text-sm",
+  small: "text-[8px] sm:text-[10px] md:text-xs",
 
   // Stat Values (large numbers)
-  statValue: "text-lg sm:text-2xl md:text-4xl font-bold",
+  statValue: "text-base sm:text-lg md:text-2xl font-bold",
 
   // Stat Labels
-  statLabel: "text-xs sm:text-sm md:text-base text-muted-foreground",
+  statLabel: "text-[10px] sm:text-xs md:text-sm text-muted-foreground",
 
   // Badge Text
-  badge: "text-[10px] sm:text-xs md:text-sm",
+  badge: "text-[8px] sm:text-[10px] md:text-xs",
 
   // Button Text
-  button: "text-xs sm:text-sm md:text-base",
+  button: "text-[10px] sm:text-xs md:text-sm",
 };
 
 export const responsiveSpacing = {

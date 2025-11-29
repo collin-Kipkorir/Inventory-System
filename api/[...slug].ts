@@ -104,6 +104,7 @@ function sendJson(res: VercelResponse, status: number, body: any) {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
+    console.log('Handler called for:', req.url, req.method);
     const base = req.url ? req.url : '';
     // Ensure we have a base for URL parsing; host doesn't matter for path parsing
     const url = new URL(base, 'http://localhost');
@@ -118,6 +119,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const parts = pathname.split('/').filter(Boolean); // e.g. ['companies', 'id']
     const resource = parts[0] || '';
     const id = parts[1] || '';
+
+    console.log('Route:', { resource, id, method: req.method });
 
     // Health
     if ((resource === '' || resource === 'health') && req.method === 'GET') {

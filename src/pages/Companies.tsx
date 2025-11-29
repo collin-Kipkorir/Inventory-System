@@ -24,6 +24,7 @@ export default function Companies() {
     phone: "",
     email: "",
     address: "",
+    kraPin: "",
   });
 
   // Load companies from Firebase on mount
@@ -92,6 +93,7 @@ export default function Companies() {
       phone: company.phone,
       email: company.email,
       address: company.address,
+      kraPin: company.kraPin || "",
     });
     setIsOpen(true);
   };
@@ -103,6 +105,7 @@ export default function Companies() {
       phone: "",
       email: "",
       address: "",
+      kraPin: "",
     });
     setEditingCompany(null);
   };
@@ -177,6 +180,15 @@ export default function Companies() {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="kraPin">KRA PIN</Label>
+                <Input
+                  id="kraPin"
+                  value={formData.kraPin}
+                  onChange={(e) => setFormData({ ...formData, kraPin: e.target.value })}
+                  placeholder="e.g., A001234567X"
+                />
+              </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
                   Cancel
@@ -203,6 +215,7 @@ export default function Companies() {
                   <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>Phone</TableHead>
                   <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>Email</TableHead>
                   <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>Address</TableHead>
+                  <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>KRA PIN</TableHead>
                   <TableHead className={`${responsiveTypography.tableHeader} whitespace-nowrap`}>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -214,6 +227,7 @@ export default function Companies() {
                     <TableCell className={`${responsiveTypography.tableCell} whitespace-nowrap`}>{company.phone}</TableCell>
                     <TableCell className={`${responsiveTypography.tableCell} whitespace-nowrap max-w-xs truncate`}>{company.email}</TableCell>
                     <TableCell className={`${responsiveTypography.tableCell} whitespace-nowrap max-w-xs truncate`}>{company.address}</TableCell>
+                    <TableCell className={`${responsiveTypography.tableCell} whitespace-nowrap`}>{company.kraPin || "-"}</TableCell>
                     <TableCell>
                       <div className="flex flex-col sm:flex-row gap-1 sm:gap-1">
                         <Button

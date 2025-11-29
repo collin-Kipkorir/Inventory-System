@@ -5,6 +5,7 @@ export interface Company {
   phone: string;
   email: string;
   address: string;
+  kraPin?: string;
   createdAt: string;
 }
 

@@ -104,7 +104,6 @@ function sendJson(res: VercelResponse, status: number, body: any) {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    console.log('Handler called for:', req.url, req.method);
     const base = req.url ? req.url : '';
     // Ensure we have a base for URL parsing; host doesn't matter for path parsing
     const url = new URL(base, 'http://localhost');
@@ -119,8 +118,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const parts = pathname.split('/').filter(Boolean); // e.g. ['companies', 'id']
     const resource = parts[0] || '';
     const id = parts[1] || '';
-
-    console.log('Route:', { resource, id, method: req.method });
 
     // Health
     if ((resource === '' || resource === 'health') && req.method === 'GET') {
@@ -305,13 +302,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Unknown route
     return sendJson(res, 404, { error: 'Not found' });
   } catch (e) {
-    // Log full error on server for Vercel function logs (temporary)
-    try {
-      console.error('API handler error:', e);
-      if (e && typeof e === 'object' && 'stack' in e) console.error((e as any).stack);
-    } catch (err) {
-      console.warn('Failed to log error stack:', err);
-    }
-    return sendJson(res, 500, { error: String(e) });
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    return sendJson(res, 500, { error: 'Internal Server Error', ...(process.env.NODE_ENV === 'development' && { details: errorMessage }) });
   }
 }

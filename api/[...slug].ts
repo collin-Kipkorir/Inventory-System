@@ -1,5 +1,74 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { read, push, update, remove } from './firebase';
+import admin from 'firebase-admin';
+
+// Inline Firebase initialization (avoid cross-file import issues in serverless bundling)
+let dbInitialized = false;
+function initFirebase() {
+  if (dbInitialized || admin.apps.length) return;
+  try {
+    let serviceAccount = null;
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      try {
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+      } catch (err) {
+        console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON:', err);
+      }
+    }
+    if (serviceAccount) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: process.env.FIREBASE_DATABASE_URL || undefined,
+      });
+      dbInitialized = true;
+      console.log('Firebase initialized in API handler');
+    } else {
+      console.warn('Firebase credentials not found');
+    }
+  } catch (err) {
+    console.error('Firebase init error:', err);
+  }
+}
+
+function getDb() {
+  try {
+    if (admin.apps.length) return admin.database();
+  } catch (err) {
+    console.error('getDb error:', err);
+  }
+  return null;
+}
+
+async function read(p: string) {
+  initFirebase();
+  const db = getDb();
+  if (!db) throw new Error('Firebase not initialized');
+  const s = await db.ref(p).once('value');
+  return s.val();
+}
+
+async function push(p: string, v: any) {
+  initFirebase();
+  const db = getDb();
+  if (!db) throw new Error('Firebase not initialized');
+  const r = db.ref(p).push();
+  await r.set(v);
+  return { id: r.key, ...v };
+}
+
+async function update(p: string, u: any) {
+  initFirebase();
+  const db = getDb();
+  if (!db) throw new Error('Firebase not initialized');
+  await db.ref(p).update(u);
+  return u;
+}
+
+async function remove(p: string) {
+  initFirebase();
+  const db = getDb();
+  if (!db) throw new Error('Firebase not initialized');
+  await db.ref(p).remove();
+}
 
 const toArray = (obj: Record<string, unknown> | null | undefined) =>
   !obj ? [] : Object.entries(obj).map(([id, val]) => ({ id, ...((val as Record<string, unknown>) || {}) }));

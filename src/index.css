@@ -117,22 +117,28 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  html {
-    overflow: hidden;
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    /* Allow page-level scrolling. Previously set to `hidden` which prevented
+       the browser from showing scrollbars when content overflowed the
+       viewport. Using `auto` preserves default behavior while allowing
+       scroll when needed. */
+    overflow: auto;
   }
 
   body {
     @apply bg-background text-foreground;
     font-size: 11.2px; /* 14px * 0.8 */
     zoom: 0.8; /* 80% zoom for PC */
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
   }
 
   #root {
-    display: flex;
-    flex-direction: column;
+    height: 100%;
+    margin: 0;
+    padding: 0;
   }
 
   h1 {

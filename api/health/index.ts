@@ -1,8 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import admin from 'firebase-admin';
 
 // Safe health endpoint for debugging deployment envs.
-// Dynamically import the local api/firebase helper so we can catch import-time errors
-// and return useful diagnostic information without leaking secrets.
+// Initialize Firebase inline and check status.
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
@@ -14,15 +14,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const dbUrl = process.env.FIREBASE_DATABASE_URL || '';
 
     let firebaseInitialized = false;
-    let importError: string | null = null;
+    let initError: string | null = null;
 
     try {
-      const mod = await import('../firebase');
-      const admin = mod.default;
-      firebaseInitialized = Array.isArray((admin as any).apps) ? (admin as any).apps.length > 0 : false;
+      // Initialize Firebase inline if not already done
+      if (!admin.apps.length) {
+        let serviceAccount = null;
+        if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+          try {
+            serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+          } catch (err) {
+            initError = `Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON: ${String(err)}`;
+          }
+        }
+        if (serviceAccount && !initError) {
+          try {
+            admin.initializeApp({
+              credential: admin.credential.cert(serviceAccount),
+              databaseURL: process.env.FIREBASE_DATABASE_URL || undefined,
+            });
+          } catch (err) {
+            initError = `Failed to initialize Firebase: ${String(err)}`;
+          }
+        }
+      }
+      firebaseInitialized = admin.apps.length > 0;
     } catch (err) {
-      importError = (err && err.stack) ? String((err as any).stack) : String(err);
-      console.error('health import ../firebase error:', importError);
+      initError = `Health check error: ${String(err)}`;
+      console.error('health init error:', initError);
     }
 
     const body = {
@@ -35,13 +54,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       firebase: {
         initialized: firebaseInitialized,
-        importError: importError ? '[present]' : null,
+        initError: initError ? '[present]' : null,
       },
-      // include the importError text only when explicitly requested via query param ?verbose=1
     } as any;
 
-    if (importError && req.query && (req.query.verbose === '1' || req.query.verbose === 'true')) {
-      body.firebase.importErrorText = importError;
+    if (initError && req.query && (req.query.verbose === '1' || req.query.verbose === 'true')) {
+      body.firebase.initErrorText = initError;
     }
 
     res.status(200).json(body);

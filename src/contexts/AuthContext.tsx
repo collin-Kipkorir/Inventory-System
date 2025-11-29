@@ -69,6 +69,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (username: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
+      // Quick developer override: accept a hardcoded admin for local testing
+      if (username === "Johny" && password === "2025") {
+        const userData = {
+          username: "Johny",
+          token: `hardcoded_admin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        };
+
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
+        navigate("/");
+        return;
+      }
+
       // Try to authenticate with Firebase
       const userData = await authenticateWithFirebase(username, password);
 

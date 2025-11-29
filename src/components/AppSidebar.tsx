@@ -42,7 +42,43 @@ export function AppSidebar() {
             </SidebarGroupLabel>
 
             <SidebarGroupContent>
-              <SidebarMenu>
+              {/*
+                Make the menu keyboard-navigable: handle ArrowUp/ArrowDown/Home/End
+                to move focus between links. The links themselves remain native
+                anchors so Enter/Space work as expected.
+              */}
+              <SidebarMenu
+                role="menu"
+                aria-label="Main navigation"
+                onKeyDown={(e) => {
+                  const key = e.key;
+                  if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(key)) return;
+                  e.preventDefault();
+
+                  const container = e.currentTarget as HTMLElement;
+                  const focusable = Array.from(
+                    container.querySelectorAll<HTMLAnchorElement>("a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])"),
+                  ).filter((el) => !el.hasAttribute("disabled"));
+
+                  if (focusable.length === 0) return;
+
+                  const active = document.activeElement as HTMLElement | null;
+                  let idx = focusable.findIndex((el) => el === active);
+
+                  if (key === "ArrowDown") {
+                    idx = idx < focusable.length - 1 ? idx + 1 : 0;
+                  } else if (key === "ArrowUp") {
+                    idx = idx > 0 ? idx - 1 : focusable.length - 1;
+                  } else if (key === "Home") {
+                    idx = 0;
+                  } else if (key === "End") {
+                    idx = focusable.length - 1;
+                  }
+
+                  const next = focusable[idx] as HTMLElement | undefined;
+                  next?.focus();
+                }}
+              >
                 {menuItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
@@ -51,6 +87,8 @@ export function AppSidebar() {
                         end={item.url === "/"}
                         className="hover:bg-sidebar-accent w-full"
                         activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                        role="menuitem"
+                        tabIndex={0}
                       >
                         <div
                           className={cn(

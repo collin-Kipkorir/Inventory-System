@@ -114,7 +114,7 @@ export default function Companies() {
     <div className={responsiveSpacing.pageGap}>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
         <div>
-          <h2 className={responsiveTypography.pageTitle}>Companies</h2>
+          <h4 className={responsiveTypography.pageTitle}>Companies</h4>
           <p className={`${responsiveTypography.small} text-muted-foreground`}>Manage your business partners</p>
         </div>
         <Dialog open={isOpen} onOpenChange={(open) => {

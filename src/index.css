@@ -129,10 +129,20 @@ All colors MUST be HSL.
     overflow: auto;
   }
 
+  /* Set root font-size so Tailwind's rem-based utilities scale down globally.
+     62.5% of 16px = 10px which makes 1rem == 10px (easier sizing). This
+     gently reduces text sizes across the app and helps prevent overflow.
+  */
+  html {
+    font-size: 62.5%; /* 1rem = 10px */
+  }
+
   body {
     @apply bg-background text-foreground;
-    font-size: 11.2px; /* 14px * 0.8 */
-    zoom: 0.8; /* 80% zoom for PC */
+   /* Increased so text is slightly larger across the app while still
+     remaining compact enough to avoid layout overflow. */
+   font-size: 1.25rem; /* ~12.5px */
+    line-height: 1.45;
   }
 
   #root {
@@ -141,29 +151,33 @@ All colors MUST be HSL.
     padding: 0;
   }
 
+  /* Slightly smaller, consistent heading sizes (in rem) which work well
+     with the reduced root font-size and prevent large headings from causing
+     layout overflows. Adjust these values if you want larger/smaller scales. */
   h1 {
     @apply text-2xl md:text-3xl;
-    font-size: calc(0.8em * 1.6);
+    font-size: 2.0rem; /* ~20px */
   }
 
   h2 {
     @apply text-xl md:text-2xl;
-    font-size: calc(0.8em * 1.4);
+    font-size: 1.8rem; /* ~18px */
   }
 
   h3 {
     @apply text-lg md:text-xl;
-    font-size: calc(0.8em * 1.25);
+    font-size: 1.6rem; /* ~16px */
   }
 
   h4 {
     @apply text-base md:text-lg;
-    font-size: calc(0.8em * 1.1);
+    font-size: 1.3rem; /* ~13px */
   }
 
   @media (max-width: 768px) {
     body {
-      font-size: 10.4px; /* 13px * 0.8 */
+      /* Slightly smaller on narrow screens */
+      font-size: 1.04rem; /* ~10.4px when root is 10px */
     }
   }
 }

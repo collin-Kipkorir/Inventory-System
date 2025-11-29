@@ -13,6 +13,15 @@ const firebaseConfig = {
   databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "YOUR_DATABASE_URL",
 };
 
+// Basic validation for database URL to give a helpful error early
+const dbUrl = firebaseConfig.databaseURL;
+if (!dbUrl || dbUrl.startsWith("YOUR_") || !/^https?:\/\/.+\.(firebaseio|firebasedatabase)\.com\/?$/.test(dbUrl)) {
+  // Throw a clear error so developer can fix .env values
+  throw new Error(
+    `FIREBASE FATAL ERROR: Cannot parse Firebase url. Please set VITE_FIREBASE_DATABASE_URL in .env.local to your Realtime Database URL, e.g. https://<your-project>.firebaseio.com or https://<your-project>-default-rtdb.firebaseio.com`
+  );
+}
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 

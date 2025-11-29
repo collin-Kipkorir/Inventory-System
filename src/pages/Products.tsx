@@ -10,12 +10,15 @@ import { Product } from "@/types";
 import { createProduct, listProducts, updateProduct, deleteProduct } from "@/lib/api";
 import { toast } from "sonner";
 import { responsiveTypography, responsiveSpacing } from "@/lib/responsive";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<{ id: string; name?: string } | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     unit: "",
@@ -72,13 +75,7 @@ export default function Products() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    // Ask for confirmation before deleting
-    const product = products.find((p) => p.id === id);
-    const name = product?.name || "this product";
-    const confirmMsg = `Are you sure you want to delete ${name}? This action cannot be undone.`;
-    if (!window.confirm(confirmMsg)) return;
-
+  const performDelete = async (id: string) => {
     try {
       setIsLoading(true);
       await deleteProduct(id);
@@ -90,6 +87,12 @@ export default function Products() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDelete = (id: string) => {
+    const product = products.find((p) => p.id === id);
+    setConfirmTarget({ id, name: product?.name });
+    setConfirmOpen(true);
   };
 
   const handleEdit = (product: Product) => {
@@ -247,6 +250,22 @@ export default function Products() {
           )}
         </CardContent>
       </Card>
+      {/* Confirmation dialog */}
+      {confirmTarget && (
+        <ConfirmDialog
+          open={confirmOpen}
+          onOpenChange={(open) => {
+            setConfirmOpen(open);
+            if (!open) setConfirmTarget(null);
+          }}
+          title={`Delete ${confirmTarget.name || "product"}`}
+          description={`Are you sure you want to delete ${confirmTarget.name || "this product"}? This action cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={async () => {
+            await performDelete(confirmTarget.id);
+          }}
+        />
+      )}
     </div>
   );
 }

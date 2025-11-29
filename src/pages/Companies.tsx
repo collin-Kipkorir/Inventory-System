@@ -11,6 +11,7 @@ import { Company } from "@/types";
 import { createCompany, listCompanies, updateCompany, deleteCompany } from "@/lib/api";
 import { toast } from "sonner";
 import { responsiveTypography, responsiveSpacing } from "@/lib/responsive";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function Companies() {
   const navigate = useNavigate();
@@ -18,6 +19,8 @@ export default function Companies() {
   const [isOpen, setIsOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<{ id: string; name?: string } | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     contactPerson: "",
@@ -71,13 +74,7 @@ export default function Companies() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    // Ask for confirmation before deleting
-    const company = companies.find((c) => c.id === id);
-    const name = company?.name || "this company";
-    const confirmMsg = `Are you sure you want to delete ${name}? This action cannot be undone.`;
-    if (!window.confirm(confirmMsg)) return;
-
+  const performDelete = async (id: string) => {
     try {
       setIsLoading(true);
       await deleteCompany(id);
@@ -89,6 +86,12 @@ export default function Companies() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDelete = (id: string) => {
+    const company = companies.find((c) => c.id === id);
+    setConfirmTarget({ id, name: company?.name });
+    setConfirmOpen(true);
   };
 
   const handleEdit = (company: Company) => {
@@ -208,7 +211,7 @@ export default function Companies() {
         </Dialog>
       </div>
 
-      <Card>
+          <Card>
        
         <CardContent className="overflow-x-auto p-2 sm:p-4">
           {companies.length > 0 ? (
@@ -272,6 +275,24 @@ export default function Companies() {
           )}
         </CardContent>
       </Card>
+      {/* Confirmation dialog */}
+      {confirmTarget && (
+        <>
+          <ConfirmDialog
+            open={confirmOpen}
+            onOpenChange={(open) => {
+              setConfirmOpen(open);
+              if (!open) setConfirmTarget(null);
+            }}
+            title={`Delete ${confirmTarget.name || "company"}`}
+            description={`Are you sure you want to delete ${confirmTarget.name || "this company"}? This action cannot be undone.`}
+            confirmLabel="Delete"
+            onConfirm={async () => {
+              await performDelete(confirmTarget.id);
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }

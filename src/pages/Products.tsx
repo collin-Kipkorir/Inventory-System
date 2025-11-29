@@ -73,6 +73,12 @@ export default function Products() {
   };
 
   const handleDelete = async (id: string) => {
+    // Ask for confirmation before deleting
+    const product = products.find((p) => p.id === id);
+    const name = product?.name || "this product";
+    const confirmMsg = `Are you sure you want to delete ${name}? This action cannot be undone.`;
+    if (!window.confirm(confirmMsg)) return;
+
     try {
       setIsLoading(true);
       await deleteProduct(id);

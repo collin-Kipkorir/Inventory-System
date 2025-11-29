@@ -72,6 +72,12 @@ export default function Companies() {
   };
 
   const handleDelete = async (id: string) => {
+    // Ask for confirmation before deleting
+    const company = companies.find((c) => c.id === id);
+    const name = company?.name || "this company";
+    const confirmMsg = `Are you sure you want to delete ${name}? This action cannot be undone.`;
+    if (!window.confirm(confirmMsg)) return;
+
     try {
       setIsLoading(true);
       await deleteCompany(id);

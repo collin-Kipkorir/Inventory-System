@@ -40,9 +40,11 @@ export default function Login() {
         <Card className="shadow-2xl border-slate-700 bg-slate-950">
           <CardHeader className="space-y-2 text-center">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-                <span className="text-2xl font-bold text-white">IMS</span>
-              </div>
+              <img 
+                src="/favicon.png" 
+                alt="Inventory Management System Logo" 
+                className="w-16 h-16 rounded-lg shadow-lg"
+              />
             </div>
             <CardTitle className="text-2xl font-bold text-white">Inventory Management</CardTitle>
             <CardDescription className="text-slate-400">Admin Login</CardDescription>

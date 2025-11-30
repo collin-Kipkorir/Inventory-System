@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 
 export default function Login() {
-  // Start with empty fields - user must enter credentials
+  // Start with empty fields to avoid exposing credentials in the UI
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +26,7 @@ export default function Login() {
     try {
       await login(username, password);
       toast.success("Login successful!");
-      // Clear fields after successful login
+      // Clear credentials from the form immediately after successful login
       setUsername("");
       setPassword("");
     } catch (error) {

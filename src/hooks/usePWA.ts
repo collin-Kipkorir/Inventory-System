@@ -22,15 +22,16 @@ export function usePWA() {
       navigator.serviceWorker
         .register('/service-worker.js', { scope: '/' })
         .then((registration) => {
-          
+          console.log('✅ Service Worker registered:', registration);
         })
         .catch((err) => {
-          
+          console.error('❌ Service Worker registration failed:', err);
         });
     }
 
     // Handle beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log('✅ beforeinstallprompt event fired');
       e.preventDefault();
       setDeferredPrompt(e as PWAInstallPrompt);
       setIsInstallable(true);
@@ -38,6 +39,7 @@ export function usePWA() {
 
     // Handle app installed event
     const handleAppInstalled = () => {
+      console.log('✅ appinstalled event fired');
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
@@ -54,8 +56,14 @@ export function usePWA() {
 
     // Check if app was already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
+      console.log('✅ App already installed (standalone mode detected)');
       setIsInstalled(true);
+    } else {
+      console.log('ℹ️ Not in standalone mode');
     }
+
+    // Debug: Log if deferredPrompt is available
+    console.log('ℹ️ PWA hook initialized. beforeinstallprompt will fire when app is installable.');
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);

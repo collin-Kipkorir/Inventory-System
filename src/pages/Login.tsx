@@ -7,9 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 
 export default function Login() {
-  // Prefill with the developer/test credentials requested
-  const [username, setUsername] = useState("Johny");
-  const [password, setPassword] = useState("2025");
+  // Start with empty fields - user must enter credentials
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -26,6 +26,9 @@ export default function Login() {
     try {
       await login(username, password);
       toast.success("Login successful!");
+      // Clear fields after successful login
+      setUsername("");
+      setPassword("");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Login failed. Please try again.";
       toast.error(message);

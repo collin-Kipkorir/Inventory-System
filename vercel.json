@@ -3,6 +3,14 @@
     {
       "source": "/api/:slug*",
       "destination": "/api/[...slug]"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
-  ]
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false
 }
+
+

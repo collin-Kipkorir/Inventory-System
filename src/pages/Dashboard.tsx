@@ -94,7 +94,7 @@ export default function Dashboard() {
     <div className={responsiveSpacing.pageGap}>
       <div>
         <h2 className={responsiveTypography.pageTitle}>Dashboard</h2>
-        <p className={`${responsiveTypography.small} text-muted-foreground`}>Overview of your supply management system</p>
+        <p className={`${responsiveTypography.small} text-muted-foreground`}>Overview</p>
       </div>
 
       <div className="grid gap-3 sm:gap-4 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">

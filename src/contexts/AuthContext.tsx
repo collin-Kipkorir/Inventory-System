@@ -64,6 +64,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
     setIsLoading(false);
+
+    // Security: ensure credentials stored in localStorage are cleared on refresh/unload
+    const handleBeforeUnload = () => {
+      try {
+        localStorage.removeItem("user");
+      } catch (e) {
+        /* ignore */
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Also clear on pagehide (some browsers use pagehide instead of beforeunload)
+    window.addEventListener("pagehide", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handleBeforeUnload);
+    };
   }, []);
 
   const login = async (username: string, password: string): Promise<void> => {
